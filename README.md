@@ -1,1 +1,1 @@
-# taskhub-platform
+# TaskHub Platform
