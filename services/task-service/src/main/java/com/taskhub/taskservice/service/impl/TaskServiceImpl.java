@@ -7,6 +7,8 @@ import com.taskhub.taskservice.repository.TaskRepository;
 import com.taskhub.taskservice.service.TaskService;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class TaskServiceImpl implements TaskService {
 
@@ -21,5 +23,14 @@ public class TaskServiceImpl implements TaskService {
         Task task = new Task(request.title(), request.dueDate());
         Task saved = repository.save(task);
         return TaskResponse.from(saved);
+    }
+
+    @Override
+    public List<TaskResponse> getAllTasks() {
+        return repository
+                .findAll()
+                .stream()
+                .map(TaskResponse::from)
+                .toList();
     }
 }
