@@ -1,16 +1,29 @@
 package com.taskhub.taskservice.domain;
 
 import com.taskhub.taskservice.service.TaskStatus;
-
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Entity
+@Table(name = "tasks")
 public class Task {
 
-    private final String id;
-    private final String title;
-    private final LocalDateTime dueDate;
+    @Id
+    private String id;
+
+    @Column(nullable = false)
+    private String title;
+
+    private LocalDateTime dueDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private TaskStatus status;
+
+    protected Task() {
+        // Required by JPA
+    }
 
     public Task(String title, LocalDateTime dueDate) {
         if (title == null || title.isBlank()) {
