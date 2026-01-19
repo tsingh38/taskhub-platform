@@ -1,13 +1,13 @@
 package com.taskhub.taskservice.controller;
 
+import com.taskhub.taskservice.dto.TaskRequest;
 import com.taskhub.taskservice.dto.TaskResponse;
 import com.taskhub.taskservice.service.TaskService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/tasks")
+@RequestMapping("/tasks")
 public class TaskController {
 
     private final TaskService taskService;
@@ -16,8 +16,9 @@ public class TaskController {
         this.taskService = taskService;
     }
 
-    @GetMapping("/health")
-    public TaskResponse health() {
-        return taskService.health();
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public TaskResponse create(@RequestBody TaskRequest request) {
+        return taskService.createTask(request);
     }
 }

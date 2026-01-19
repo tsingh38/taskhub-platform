@@ -1,35 +1,37 @@
 package com.taskhub.taskservice.domain;
 
-import java.time.Instant;
+import com.taskhub.taskservice.service.TaskStatus;
+
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class Task {
 
-    private final UUID id;
+    private final String id;
     private final String title;
-    private final String description;
-    private final Instant createdAt;
+    private final LocalDateTime dueDate;
+    private TaskStatus status;
 
-    public Task(UUID id, String title, String description, Instant createdAt) {
-        this.id = id;
+    public Task(String title, LocalDateTime dueDate) {
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("Task title must not be blank");
+        }
+        if (dueDate != null && dueDate.isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Due date cannot be in the past");
+        }
+
+        this.id = UUID.randomUUID().toString();
         this.title = title;
-        this.description = description;
-        this.createdAt = createdAt;
+        this.dueDate = dueDate;
+        this.status = TaskStatus.OPEN;
     }
 
-    public UUID getId() {
-        return id;
-    }
+    public String getId() { return id; }
+    public String getTitle() { return title; }
+    public LocalDateTime getDueDate() { return dueDate; }
+    public TaskStatus getStatus() { return status; }
 
-    public String getTitle() {
-        return title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
+    public void markDone() {
+        this.status = TaskStatus.DONE;
     }
 }

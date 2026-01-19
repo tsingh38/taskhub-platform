@@ -1,35 +1,22 @@
 package com.taskhub.taskservice.dto;
 
-import java.time.Instant;
-import java.util.UUID;
+import com.taskhub.taskservice.domain.Task;
+import com.taskhub.taskservice.service.TaskStatus;
 
-public class TaskResponse {
+import java.time.LocalDateTime;
 
-    private final UUID id;
-    private final String title;
-    private final String description;
-    private final Instant createdAt;
-
-    public TaskResponse(UUID id, String title, String description, Instant createdAt) {
-        this.id = id;
-        this.title = title;
-        this.description = description;
-        this.createdAt = createdAt;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
+public record TaskResponse(
+        String id,
+        String title,
+        LocalDateTime dueDate,
+       TaskStatus status
+) {
+    public static TaskResponse from(Task task) {
+        return new TaskResponse(
+                task.getId(),
+                task.getTitle(),
+                task.getDueDate(),
+                task.getStatus()
+        );
     }
 }
