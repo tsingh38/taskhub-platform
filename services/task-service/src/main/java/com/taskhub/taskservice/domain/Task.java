@@ -47,4 +47,16 @@ public class Task {
     public void markDone() {
         this.status = TaskStatus.DONE;
     }
+
+    public void update(String title, LocalDateTime dueDate) {
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("Task title must not be blank");
+        }
+        if (dueDate != null && dueDate.isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Due date cannot be in the past");
+        }
+
+        this.title = title;
+        this.dueDate = dueDate;
+    }
 }

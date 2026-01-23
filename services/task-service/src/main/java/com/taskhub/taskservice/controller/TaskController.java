@@ -4,6 +4,7 @@ import com.taskhub.taskservice.dto.TaskRequest;
 import com.taskhub.taskservice.dto.TaskResponse;
 import com.taskhub.taskservice.service.TaskService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,8 +26,26 @@ public class TaskController {
     }
 
     @GetMapping
-    @ResponseStatus(HttpStatus.OK)
     public List<TaskResponse> getAllTasks() {
-        return taskService.getAllTasks();
+        return taskService.getTasks();
+    }
+
+    @GetMapping("/{id}")
+    public TaskResponse getTask(@PathVariable String id) {
+        return taskService.getTask(id);
+    }
+
+    @PutMapping("/{id}")
+    public TaskResponse updateTask(
+            @PathVariable String id,
+            @RequestBody TaskRequest request
+    ) {
+        return taskService.updateTask(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteTask(@PathVariable String id) {
+        taskService.deleteTask(id);
     }
 }
