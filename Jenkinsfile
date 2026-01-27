@@ -19,6 +19,7 @@ pipeline {
         stage('Build & Test') {
             steps {
                 sh '''
+                  cd services/task-service
                   chmod +x gradlew
                   ./gradlew clean build
                 '''
