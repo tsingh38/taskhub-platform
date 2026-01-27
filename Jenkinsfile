@@ -18,19 +18,22 @@ pipeline {
 
         stage('Build & Test') {
             steps {
-                sh '''
-                  cd services/task-service
-                  chmod +x gradlew
-                  ./gradlew clean build
-                '''
+                dir('services/task-service') {
+                    sh '''
+                      chmod +x gradlew
+                      ./gradlew clean build
+                    '''
+                }
             }
         }
 
         stage('Docker Build') {
             steps {
-                sh '''
-                  docker build -t $REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
-                '''
+                dir('services/task-service') {
+                    sh '''
+                      docker build -t $REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
+                    '''
+                }
             }
         }
 
