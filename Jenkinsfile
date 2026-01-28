@@ -74,10 +74,15 @@ pipeline {
             steps {
                 dir('infra/helm/task-service') {
                     sh """
-                      helm upgrade --install task-service-dev . \
+                      helm upgrade --install task-service \
+                        . \
                         -f values.yaml \
                         -f values-dev.yaml \
-                        --set image.tag=${APP_VERSION}
+                        --set image.repository=${REGISTRY}/${IMAGE_NAME} \
+                        --set image.tag=${APP_VERSION} \
+                        -n dev \
+                        --create-namespace \
+                        --wait --atomic
                     """
                 }
             }
@@ -86,7 +91,7 @@ pipeline {
 
     post {
         success {
-            echo "✅ ${IMAGE_NAME}:${APP_VERSION} built and deployed (if DEV)"
+            echo "✅ ${IMAGE_NAME}:${APP_VERSION} built and deployed to DEV"
         }
         failure {
             echo "❌ CI failed"
