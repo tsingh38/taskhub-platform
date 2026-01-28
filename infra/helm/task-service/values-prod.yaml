@@ -1,0 +1,8 @@
+replicaCount: 2
+
+env:
+  SPRING_PROFILES_ACTIVE: prod
+
+ingress:
+  enabled: true
+  host: task-service.prod.local

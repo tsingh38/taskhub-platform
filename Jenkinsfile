@@ -72,15 +72,21 @@ pipeline {
                 branch 'develop'
             }
             steps {
-                echo "Deploying ${APP_VERSION} to DEV"
-                // placeholder – helm / kubectl later
+                dir('infra/helm/task-service') {
+                    sh """
+                      helm upgrade --install task-service-dev . \
+                        -f values.yaml \
+                        -f values-dev.yaml \
+                        --set image.tag=${APP_VERSION}
+                    """
+                }
             }
         }
     }
 
     post {
         success {
-            echo "✅ Image pushed: ${REGISTRY}/${IMAGE_NAME}:${APP_VERSION}"
+            echo "✅ ${IMAGE_NAME}:${APP_VERSION} built and deployed (if DEV)"
         }
         failure {
             echo "❌ CI failed"
