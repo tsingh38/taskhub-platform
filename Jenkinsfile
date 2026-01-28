@@ -67,17 +67,12 @@ pipeline {
             }
         }
 
-        stage('Debug Branch') {
-            steps {
-                echo "BRANCH_NAME=${env.BRANCH_NAME}"
-                echo "GIT_BRANCH=${env.GIT_BRANCH}"
-            }
-        }
-
         stage('Deploy to DEV') {
-            when {
-                branch 'origin/develop'
-            }
+           when {
+               expression {
+                   env.GIT_BRANCH == 'origin/develop'
+               }
+           }
             steps {
                 dir('infra/helm/task-service') {
                     sh """
