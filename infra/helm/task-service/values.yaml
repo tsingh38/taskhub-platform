@@ -1,0 +1,18 @@
+replicaCount: 1
+
+image:
+  repository: task-service
+  tag: local
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+ingress:
+  enabled: true
+  host: task-service.dev.local
+
+env:
+  SPRING_PROFILES_ACTIVE: dev
