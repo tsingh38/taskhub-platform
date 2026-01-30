@@ -1,7 +1,10 @@
 replicaCount: 1
 
 env:
-  SPRING_PROFILES_ACTIVE: dev
+  SPRING_PROFILES_ACTIVE: k8s
+  DB_URL: jdbc:postgresql://postgres-postgresql.dev.svc.cluster.local:5432/taskdb
+  DB_USER: taskuser
+  DB_PASSWORD: taskpass
 
 ingress:
   enabled: true

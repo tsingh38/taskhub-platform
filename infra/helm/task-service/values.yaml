@@ -2,10 +2,16 @@ replicaCount: 1
 
 image:
   repository: tsingh38/taskhub
-  tag: "0.0.0"
+  tag: "latest"              # overridden by Jenkins via --set
   pullPolicy: IfNotPresent
 
 service:
   type: ClusterIP
   port: 80
   targetPort: 8080
+
+ingress:
+  enabled: false              # enabled only per env
+
+env:
+  SPRING_PROFILES_ACTIVE: default

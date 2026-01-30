@@ -1,0 +1,14 @@
+auth:
+  username: taskuser
+  password: taskpass
+  database: taskdb
+
+primary:
+  persistence:
+    enabled: true
+    size: 8Gi
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi

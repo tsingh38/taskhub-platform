@@ -2,7 +2,10 @@ replicaCount: 2
 
 env:
   SPRING_PROFILES_ACTIVE: prod
+  DB_URL: jdbc:postgresql://postgres-postgresql.prod.svc.cluster.local:5432/taskdb
+  DB_USER: taskuser
+  DB_PASSWORD: taskpass
 
 ingress:
   enabled: true
-  host: task-service.prod.local
+  host: task-service.prod.example.com
