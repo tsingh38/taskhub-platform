@@ -1,5 +1,11 @@
 replicaCount: 1
 
+service:
+  type: NodePort
+  port: 80
+  targetPort: 8080
+  nodePort: 30080
+
 env:
   SPRING_PROFILES_ACTIVE: k8s
   DB_URL: jdbc:postgresql://postgres-postgresql.dev.svc.cluster.local:5432/taskdb
