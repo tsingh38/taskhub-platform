@@ -16,13 +16,13 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-   // @ExceptionHandler(TaskNotFoundException.class)
-    // public ProblemDetail handleTaskNotFound(TaskNotFoundException ex) {
-    //    return ProblemDetail.forStatusAndDetail(
-    //           HttpStatus.NOT_FOUND,
-    //            "The requested task could not be found."
-    //   );
-   //  }
+    @ExceptionHandler(TaskNotFoundException.class)
+    public ProblemDetail handleTaskNotFound(TaskNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                "The requested task could not be found."
+        );
+    }
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidationErrors(MethodArgumentNotValidException ex) {
         // 1. Create the standard object
@@ -47,7 +47,7 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    // 2. Handle "Everything Else" (The Safety Net)
+    /* 2. Handle "Everything Else" (The Safety Net)
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneralException(Exception ex) {
         // Log the error internally!
@@ -56,4 +56,6 @@ public class GlobalExceptionHandler {
         // Return a generic message to user to avoid leaking internals
         return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "An internal error occurred.");
     }
+    */
+
 }
