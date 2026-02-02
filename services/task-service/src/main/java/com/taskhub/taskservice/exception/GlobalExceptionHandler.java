@@ -16,13 +16,13 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(TaskNotFoundException.class)
-    public ProblemDetail handleTaskNotFound(TaskNotFoundException ex) {
-        return ProblemDetail.forStatusAndDetail(
-                HttpStatus.NOT_FOUND,
-                "The requested task could not be found."
-        );
-    }
+   // @ExceptionHandler(TaskNotFoundException.class)
+    // public ProblemDetail handleTaskNotFound(TaskNotFoundException ex) {
+    //    return ProblemDetail.forStatusAndDetail(
+    //           HttpStatus.NOT_FOUND,
+    //            "The requested task could not be found."
+    //   );
+   //  }
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidationErrors(MethodArgumentNotValidException ex) {
         // 1. Create the standard object
