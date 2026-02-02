@@ -8,8 +8,8 @@ spec:
   selector:
     app: {{ .Release.Name }}
   ports:
-    - port: { { .Values.service.port } }
-      targetPort: { { .Values.service.targetPort } }
-      { { - if eq .Values.service.type "NodePort" } }
-      nodePort: { { .Values.service.nodePort } }
-      { { - end } }
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      {{- if eq .Values.service.type "NodePort" }}
+      nodePort: {{ .Values.service.nodePort }}
+      {{- end }}
