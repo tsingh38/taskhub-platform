@@ -1,5 +1,8 @@
 replicaCount: 1
 
+image:
+  pullPolicy: Always
+
 service:
   type: NodePort
   port: 80
