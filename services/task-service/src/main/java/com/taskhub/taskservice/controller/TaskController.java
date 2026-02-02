@@ -2,12 +2,15 @@ package com.taskhub.taskservice.controller;
 
 import com.taskhub.taskservice.dto.TaskRequest;
 import com.taskhub.taskservice.dto.TaskResponse;
+import com.taskhub.taskservice.exception.GlobalExceptionHandler;
 import com.taskhub.taskservice.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +22,7 @@ import java.util.List;
 @Tag(name = "Tasks", description = "Task management operations")
 public class TaskController {
 
+    private static final Logger log = LoggerFactory.getLogger(TaskController.class);
     private final TaskService taskService;
 
     public TaskController(TaskService taskService) {
@@ -33,6 +37,7 @@ public class TaskController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public TaskResponse create( @Valid  @RequestBody TaskRequest request) {
+        log.info("Creating new task with title: '{}'", request.title());
         return taskService.createTask(request);
     }
 
@@ -66,6 +71,7 @@ public class TaskController {
             @PathVariable String id,
             @Valid @RequestBody TaskRequest request
     ) {
+        log.info("Updating the task wih title '{}'", request.title());
         return taskService.updateTask(id, request);
     }
 

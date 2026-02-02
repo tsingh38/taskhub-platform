@@ -18,3 +18,18 @@ env:
 ingress:
   enabled: true
   host: task-service.dev.local
+
+# Redundant if identical to values.yaml, but good for explicit visibility
+probes:
+  liveness:
+    enabled: true
+    path: /actuator/health/liveness
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    failureThreshold: 3
+  readiness:
+    enabled: true
+    path: /actuator/health/readiness
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    failureThreshold: 3

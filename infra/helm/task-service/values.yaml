@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: tsingh38/taskhub
-  tag: "latest"              # overridden by Jenkins via --set
+  tag: "latest"
   pullPolicy: IfNotPresent
 
 service:
@@ -11,7 +11,25 @@ service:
   targetPort: 8080
 
 ingress:
-  enabled: false              # enabled only per env
+  enabled: false
 
 env:
   SPRING_PROFILES_ACTIVE: default
+
+# Default Probe Configuration (Can be overridden in values-dev.yaml)
+probes:
+  liveness:
+    enabled: true
+    path: /actuator/health/liveness
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    failureThreshold: 3
+  readiness:
+    enabled: true
+    path: /actuator/health/readiness
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    failureThreshold: 3
+
+resources: {}
+# (Optional: Add 'resources: {}' at the end to prevent template errors if your deployment.yaml references it)

@@ -1,5 +1,7 @@
 package com.taskhub.taskservice.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -15,6 +17,8 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(TaskNotFoundException.class)
     public ProblemDetail handleTaskNotFound(TaskNotFoundException ex) {
@@ -47,15 +51,14 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    /* 2. Handle "Everything Else" (The Safety Net)
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneralException(Exception ex) {
-        // Log the error internally!
-        // logger.error("Unexpected error", ex);
+        // SENIOR LOGGING:
+        // 1. Log as ERROR (not info).
+        // 2. Include the Stack Trace (pass 'ex' as the last argument).
+        log.error("Unexpected internal error occurred: {}", ex.getMessage(), ex);
 
-        // Return a generic message to user to avoid leaking internals
         return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "An internal error occurred.");
     }
-    */
 
 }
