@@ -1,0 +1,46 @@
+pipeline {
+    agent any
+
+    environment {
+        // Define your Namespace
+        NAMESPACE = "monitoring"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Deploy Monitoring Stack') {
+            when {
+                changeset "infra/k8s/monitoring/**"
+            }
+            steps {
+                script {
+                    dir('infra/k8s/monitoring')
+                        withCredentials([string(credentialsId: 'SLACK_WEBHOOK_URL', variable: 'SLACK_URL')]) {
+                            sh """
+                                echo "Deploying Monitoring Stack..."
+                                helm upgrade --install monitoring-stack prometheus-community/kube-prometheus-stack \
+                                  --namespace ${NAMESPACE} \
+                                  --create-namespace \
+                                  -f values.yaml \
+                                  -f values-dev.yaml \
+                                  --set alertmanager.config.global.slack_api_url="${SLACK_URL}" \
+                                  --wait
+                            """
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Monitoring Configuration Updated Successfully"
+        }
+    }
+}
