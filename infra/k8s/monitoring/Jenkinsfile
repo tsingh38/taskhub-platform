@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        // Define your Namespace
         NAMESPACE = "monitoring"
     }
 
@@ -14,12 +13,13 @@ pipeline {
         }
 
         stage('Deploy Monitoring Stack') {
+            // Only run this if files in 'monitoring' folder changed
             when {
                 changeset "infra/k8s/monitoring/**"
             }
             steps {
                 script {
-                    dir('infra/k8s/monitoring')
+                    dir('infra/k8s/monitoring') {
                         withCredentials([string(credentialsId: 'SLACK_WEBHOOK_URL', variable: 'SLACK_URL')]) {
                             sh """
                                 echo "Deploying Monitoring Stack..."
@@ -28,11 +28,11 @@ pipeline {
                                   --create-namespace \
                                   -f values.yaml \
                                   -f values-dev.yaml \
-                                  --set alertmanager.config.global.slack_api_url="${SLACK_URL}" \
+                                  --set alertmanager.config.global.slack_api_url="${env.SLACK_URL}" \
                                   --wait
                             """
                         }
-                    }
+                    } // FIX 2: Closing brace for dir
                 }
             }
         }
