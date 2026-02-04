@@ -23,16 +23,21 @@ pipeline {
                 script {
                     dir('infra/k8s/monitoring') {
                         withCredentials([string(credentialsId: 'SLACK_WEBHOOK_URL', variable: 'SLACK_URL')]) {
-                            sh """
+                            sh '''
+                                echo "Adding Prometheus Repo..."
+                                helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+                                helm repo update
+
                                 echo "Deploying Monitoring Stack..."
+                                # Notice we use $SLACK_URL (Shell Variable), not ${env.SLACK_URL} (Groovy)
                                 helm upgrade --install monitoring-stack prometheus-community/kube-prometheus-stack \
-                                  --namespace ${NAMESPACE} \
+                                  --namespace $NAMESPACE \
                                   --create-namespace \
                                   -f values.yaml \
                                   -f values-dev.yaml \
-                                  --set alertmanager.config.global.slack_api_url="${env.SLACK_URL}" \
+                                  --set alertmanager.config.global.slack_api_url="$SLACK_URL" \
                                   --wait
-                            """
+                            '''
                         }
                     }
                 }
