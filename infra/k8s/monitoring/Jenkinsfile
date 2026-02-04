@@ -13,10 +13,11 @@ pipeline {
         }
 
         stage('Deploy Monitoring Stack') {
-            // Only run this if files in 'monitoring' folder changed
             when {
-                changeset "infra/k8s/monitoring/**"
-                triggeredBy 'UserIdCause' // Manual run
+                anyOf {
+                    changeset "infra/k8s/monitoring/**"
+                    triggeredBy 'UserIdCause'
+                }
             }
             steps {
                 script {
@@ -33,7 +34,7 @@ pipeline {
                                   --wait
                             """
                         }
-                    } // FIX 2: Closing brace for dir
+                    }
                 }
             }
         }
