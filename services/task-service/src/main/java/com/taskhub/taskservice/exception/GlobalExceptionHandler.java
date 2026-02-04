@@ -1,64 +1,66 @@
 package com.taskhub.taskservice.exception;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private final MeterRegistry registry;
+
+    // Inject Registry
+    public GlobalExceptionHandler(MeterRegistry registry) {
+        this.registry = registry;
+    }
+
+    // Helper to record metrics
+    private void recordError(String errorType) {
+        Counter.builder("api.errors.total")
+                .tag("type", errorType)
+                .description("Total API errors returned to users")
+                .register(registry)
+                .increment();
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+
+        log.warn("Validation error: {}", ex.getMessage());
+        recordError("validation");
+
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+                errors.put(error.getField(), error.getDefaultMessage()));
+
+        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    }
 
     @ExceptionHandler(TaskNotFoundException.class)
-    public ProblemDetail handleTaskNotFound(TaskNotFoundException ex) {
-        return ProblemDetail.forStatusAndDetail(
-                HttpStatus.NOT_FOUND,
-                "The requested task could not be found."
-        );
-    }
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ProblemDetail handleValidationErrors(MethodArgumentNotValidException ex) {
-        // 1. Create the standard object
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.BAD_REQUEST,
-                "Validation failed for one or more fields."
-        );
+    public ResponseEntity<String> handleTaskNotFound(TaskNotFoundException ex) {
+        log.warn("Task not found: {}", ex.getMessage());
 
-        problem.setType(URI.create("https://taskhub.com/errors/validation-error"));
-        problem.setTitle("Input Validation Error");
+        recordError("not_found");
 
-        Map<String, String> fieldErrors = ex.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .collect(Collectors.toMap(
-                        FieldError::getField,           // Key: "title"
-                        DefaultMessageSourceResolvable::getDefaultMessage   // Value: "must not be blank"
-                ));
-
-        problem.setProperty("fieldErrors", fieldErrors);
-
-        return problem;
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(Exception.class)
-    public ProblemDetail handleGeneralException(Exception ex) {
-        // SENIOR LOGGING:
-        // 1. Log as ERROR (not info).
-        // 2. Include the Stack Trace (pass 'ex' as the last argument).
-        log.error("Unexpected internal error occurred: {}", ex.getMessage(), ex);
+    public ResponseEntity<String> handleGlobalException(Exception ex) {
+        log.error("Unexpected error: ", ex);
 
-        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "An internal error occurred.");
+        recordError("server_error");
+
+        return new ResponseEntity<>("An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
     }
-
 }

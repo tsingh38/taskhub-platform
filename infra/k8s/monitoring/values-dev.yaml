@@ -1,0 +1,14 @@
+# DEV ENVIRONMENT
+# Goal: Save money, reduce noise.
+
+prometheus:
+  prometheusSpec:
+    retention: 2d           # Keep data for only 2 days
+    resources:
+      requests:
+        memory: 256Mi       # Tiny memory
+
+alertmanager:
+  config:
+    global:
+      slack_api_url: "https://hooks.slack.com/services/PLACEHOLDER_TOKEN"

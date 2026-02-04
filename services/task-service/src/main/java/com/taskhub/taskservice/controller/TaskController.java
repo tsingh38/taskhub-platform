@@ -2,8 +2,10 @@ package com.taskhub.taskservice.controller;
 
 import com.taskhub.taskservice.dto.TaskRequest;
 import com.taskhub.taskservice.dto.TaskResponse;
-import com.taskhub.taskservice.exception.GlobalExceptionHandler;
 import com.taskhub.taskservice.service.TaskService;
+import io.micrometer.core.annotation.Timed;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -12,7 +14,6 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,64 +26,53 @@ public class TaskController {
     private static final Logger log = LoggerFactory.getLogger(TaskController.class);
     private final TaskService taskService;
 
-    public TaskController(TaskService taskService) {
+    public TaskController(TaskService taskService, MeterRegistry registry) {
         this.taskService = taskService;
     }
 
-    @Operation(summary = "Create a task", description = "Creates a new task with a pending status")
+    @Operation(summary = "Create a task")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Task created successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid input data")
+            @ApiResponse(responseCode = "201", description = "Task created"),
+            @ApiResponse(responseCode = "400", description = "Invalid input")
     })
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public TaskResponse create( @Valid  @RequestBody TaskRequest request) {
-        log.info("Creating new task with title: '{}'", request.title());
-        return taskService.createTask(request);
+    @Timed(value = "api.tasks.create", description = "Time taken to create a task",histogram = true)
+    public TaskResponse create(@Valid @RequestBody TaskRequest request) {
+
+            log.info("Creating new task: '{}'", request.title());
+            return taskService.createTask(request);
+
     }
 
-    @Operation(summary = "Retrieve all the tasks", description = "Get all the tasks")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Retrieve all the existing tasks"),
-            @ApiResponse(responseCode = "400", description = "Invalid input data")
-    })
+    @Operation(summary = "Retrieve all tasks")
     @GetMapping
+    @Timed(value = "api.tasks.list", description = "Time taken to list tasks",histogram = true)
     public List<TaskResponse> getAllTasks() {
         return taskService.getTasks();
     }
 
-    @Operation(summary = "Retrieve the task", description = "Get a task with given id")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Task created successfully"),
-            @ApiResponse(responseCode = "404", description = "Task not found")
-    })
+    @Operation(summary = "Retrieve a task")
     @GetMapping("/{id}")
+    @Timed(value = "api.tasks.get", description = "Time taken to get a task")
     public TaskResponse getTask(@PathVariable String id) {
         return taskService.getTask(id);
     }
 
-    @Operation(summary = "Update the task", description = "Update the task with given id")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Task updated successfully"),
-            @ApiResponse(responseCode = "400", description = "Task not found")
-    })
+    @Operation(summary = "Update a task")
     @PutMapping("/{id}")
-    public TaskResponse updateTask(
-            @PathVariable String id,
-            @Valid @RequestBody TaskRequest request
-    ) {
-        log.info("Updating the task wih title '{}'", request.title());
-        return taskService.updateTask(id, request);
-    }
+    @Timed(value = "api.tasks.update", description = "Time taken to update a task",histogram = true)
+    public TaskResponse updateTask(@PathVariable String id, @Valid @RequestBody TaskRequest request) {
+            return taskService.updateTask(id, request);
+        }
 
-    @Operation(summary = "Delete the task", description = "Delete the task with given id")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Task deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "Task not found")
-    })
+    @Operation(summary = "Delete a task")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Timed(value = "api.tasks.delete", description = "Time taken to delete a task",histogram = true)
     public void deleteTask(@PathVariable String id) {
-        taskService.deleteTask(id);
+            log.info("Deleting task id: '{}'", id);
+            taskService.deleteTask(id);
+
     }
 }
