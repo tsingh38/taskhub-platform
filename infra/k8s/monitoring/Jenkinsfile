@@ -16,6 +16,7 @@ pipeline {
             // Only run this if files in 'monitoring' folder changed
             when {
                 changeset "infra/k8s/monitoring/**"
+                triggeredBy 'UserIdCause' // Manual run
             }
             steps {
                 script {
