@@ -1,8 +1,10 @@
 # DEV ENVIRONMENT
-# Goal: Save money, reduce noise.
 
 prometheus:
   prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector: { }  # Select ALL ServiceMonitors
+    serviceMonitorNamespaceSelector: { } # Select ServiceMonitors in ALL namespaces
     retention: 2d           # Keep data for only 2 days
     resources:
       requests:
