@@ -6,6 +6,8 @@ import com.taskhub.taskservice.dto.TaskResponse;
 import com.taskhub.taskservice.exception.TaskNotFoundException;
 import com.taskhub.taskservice.repository.TaskRepository;
 import com.taskhub.taskservice.service.TaskService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -29,12 +31,9 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public List<TaskResponse> getTasks() {
-        return repository
-                .findAll()
-                .stream()
-                .map(TaskResponse::from)
-                .toList();
+    public Page<TaskResponse> getTasks(Pageable pageable) {
+        return repository.findAll(pageable)
+                .map(TaskResponse::from);
     }
 
     @Override

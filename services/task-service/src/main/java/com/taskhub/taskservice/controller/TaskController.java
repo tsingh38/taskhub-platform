@@ -7,12 +7,16 @@ import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,11 +49,14 @@ public class TaskController {
 
     }
 
-    @Operation(summary = "Retrieve all tasks")
+    @Operation(summary = "Retrieve all tasks (Paginated)")
     @GetMapping
-    @Timed(value = "api.tasks.list", description = "Time taken to list tasks",histogram = true)
-    public List<TaskResponse> getAllTasks() {
-        return taskService.getTasks();
+    @Timed(value = "api.tasks.list", description = "Time taken to list tasks", histogram = true)
+    public Page<TaskResponse> getAllTasks(
+            @Parameter(description = "Pagination (page, size, sort)")
+            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable
+    ) {
+        return taskService.getTasks(pageable);
     }
 
     @Operation(summary = "Retrieve a task")
