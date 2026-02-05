@@ -82,7 +82,7 @@ class TaskControllerIT {
         mockMvc.perform(get("/tasks")
                         .param("page", "0")
                         .param("size", "5")
-                        .param("sort", "createdAt,desc")) // Optional: Test sorting too
+                        .param("sort", "dueDate,desc")) // Optional: Test sorting too
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1)) // Check size of 'content' array
                 .andExpect(jsonPath("$.content[0].title").value("Integration Task")); // Verify data

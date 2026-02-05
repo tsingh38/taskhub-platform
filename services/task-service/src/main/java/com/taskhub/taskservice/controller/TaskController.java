@@ -54,7 +54,7 @@ public class TaskController {
     @Timed(value = "api.tasks.list", description = "Time taken to list tasks", histogram = true)
     public Page<TaskResponse> getAllTasks(
             @Parameter(description = "Pagination (page, size, sort)")
-            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable
+            @PageableDefault(size = 20, sort = "dueDate") Pageable pageable
     ) {
         return taskService.getTasks(pageable);
     }
