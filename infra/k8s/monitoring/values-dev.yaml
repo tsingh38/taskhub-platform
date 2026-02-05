@@ -3,12 +3,24 @@
 prometheus:
   prometheusSpec:
     serviceMonitorSelectorNilUsesHelmValues: false
-    serviceMonitorSelector: { }  # Select ALL ServiceMonitors
-    serviceMonitorNamespaceSelector: { } # Select ServiceMonitors in ALL namespaces
-    retention: 2d           # Keep data for only 2 days
+    serviceMonitorSelector: {}
+    serviceMonitorNamespaceSelector: {}
+
+    ruleSelectorNilUsesHelmValues: false
+    ruleSelector: {}
+    ruleNamespaceSelector: {}
+
+    # 👇 CORRECTED: Pointing to the specific Service Name found in your cluster
+    alertingEndpoints:
+      - namespace: monitoring
+        name: monitoring-stack-kube-prom-alertmanager
+        port: http-web
+        pathPrefix: /
+
+    retention: 2d
     resources:
       requests:
-        memory: 256Mi       # Tiny memory
+        memory: 256Mi
 
 alertmanager:
   config:
