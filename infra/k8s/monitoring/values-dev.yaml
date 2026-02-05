@@ -14,7 +14,7 @@ prometheus:
     alertingEndpoints:
       - namespace: monitoring
         name: monitoring-stack-kube-prom-alertmanager
-        port: http-web
+        port: 9093
         pathPrefix: /
 
     retention: 2d
