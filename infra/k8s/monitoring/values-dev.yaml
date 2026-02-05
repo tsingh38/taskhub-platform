@@ -10,11 +10,10 @@ prometheus:
     ruleSelector: {}
     ruleNamespaceSelector: {}
 
-    # 👇 RE-TARGETING: Point to the 'Old' Running Alertmanager
     alertingEndpoints:
       - namespace: monitoring
-        name: monitoring-kube-prometheus-alertmanager # ⚠️ CHANGED: Pointing to the survivor
-        port: 9093 # Try number first. If fails, we check name.
+        name: monitoring-kube-prometheus-alertmanager
+        port: http-web
         pathPrefix: /
 
     retention: 2d
