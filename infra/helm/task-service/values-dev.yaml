@@ -19,7 +19,7 @@ ingress:
   enabled: true
   host: task-service.dev.local
 
-# Redundant if identical to values.yaml, but good for explicit visibility
+# Redundant if identical to values.yaml
 probes:
   liveness:
     enabled: true

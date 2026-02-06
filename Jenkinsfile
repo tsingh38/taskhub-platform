@@ -8,7 +8,6 @@ pipeline {
     }
 
     stages {
-        // Checkout code first to determine what changed
         stage('Checkout') {
             steps {
                 checkout scm
@@ -24,7 +23,6 @@ pipeline {
                     changeset "Jenkinsfile"
                 }
             }
-            // Group all app logic inside this conditional block
             stages {
                 stage('Resolve Version') {
                     steps {

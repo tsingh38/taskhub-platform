@@ -16,7 +16,6 @@ ingress:
 env:
   SPRING_PROFILES_ACTIVE: default
 
-# Default Probe Configuration (Can be overridden in values-dev.yaml)
 probes:
   liveness:
     enabled: true
@@ -32,4 +31,3 @@ probes:
     failureThreshold: 3
 
 resources: {}
-# (Optional: Add 'resources: {}' at the end to prevent template errors if your deployment.yaml references it)
