@@ -12,7 +12,8 @@ resource "helm_release" "prometheus_stack" {
   name       = "monitoring-stack"
   repository = "https://prometheus-community.github.io/helm-charts"
   chart      = "kube-prometheus-stack"
-  namespace  = kubernetes_namespace.monitoring.metadata[0].name
+  namespace  = "monitoring" # Hardcode this for the test
+  version    = "56.6.2"     # Explicitly set the version to avoid the lookup panic
 
   values = [
     file("../k8s/monitoring/values.yaml"),
