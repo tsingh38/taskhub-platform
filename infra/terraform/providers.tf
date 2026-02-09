@@ -2,11 +2,11 @@ terraform {
   required_providers {
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = "~> 2.0" # Stable 2.x branch to avoid v3.x breaking changes
+      version = "~> 2.0"
     }
     helm = {
       source  = "hashicorp/helm"
-      version = "~> 2.0" # Stable 2.x branch
+      version = "~> 2.0"
     }
   }
 }
