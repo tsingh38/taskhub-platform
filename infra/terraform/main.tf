@@ -34,16 +34,19 @@ resource "helm_release" "postgres" {
   ]
 
   set {
+    name  = "image.repository"
+    value = "postgres"
+  }
+  set {
     name  = "image.tag"
-    value = "16.4.0"
+    value = "16-alpine"
   }
 
-   set {
-    name  = "image.pullPolicy"
-    value = "IfNotPresent"
+  set {
+    name  = "primary.containerSecurityContext.runAsUser"
+    value = "0" # Official image needs root to initialize the volume
   }
 }
-
 # --- STEP 4: THE SLACK SECRET ---
 resource "kubernetes_secret" "alertmanager_slack" {
   metadata {
