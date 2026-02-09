@@ -33,20 +33,19 @@ resource "helm_release" "postgres" {
     file("../helm/postgres/values.dev.yaml")
   ]
 
+  # THE FIX: Point to the 'Legacy' registry where the versioned tags actually live
   set {
     name  = "image.repository"
-    value = "postgres"
-  }
-  set {
-    name  = "image.tag"
-    value = "16-alpine"
+    value = "bitnamilegacy/postgresql"
   }
 
+  # Use the specific tag the chart expects, which IS available in legacy
   set {
-    name  = "primary.containerSecurityContext.runAsUser"
-    value = "0" # Official image needs root to initialize the volume
+    name  = "image.tag"
+    value = "16.4.0-debian-12-r0"
   }
 }
+
 # --- STEP 4: THE SLACK SECRET ---
 resource "kubernetes_secret" "alertmanager_slack" {
   metadata {
