@@ -27,6 +27,7 @@ resource "helm_release" "postgres" {
   repository = "https://charts.bitnami.com/bitnami"
   chart      = "postgresql"
   namespace  = kubernetes_namespace.dev.metadata[0].name
+  version    = "15.5.21" # Explicitly setting a stable chart version
 
   values = [
     file("../helm/postgres/values.dev.yaml")
