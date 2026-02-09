@@ -37,6 +37,11 @@ resource "helm_release" "postgres" {
     name  = "image.tag"
     value = "16.4.0"
   }
+
+   set {
+    name  = "image.pullPolicy"
+    value = "IfNotPresent"
+  }
 }
 
 # --- STEP 4: THE SLACK SECRET ---
