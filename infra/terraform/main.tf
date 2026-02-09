@@ -13,7 +13,7 @@ resource "helm_release" "prometheus_stack" {
   repository = "https://prometheus-community.github.io/helm-charts"
   chart      = "kube-prometheus-stack"
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
-  version    = "56.6.2" # Fixed version to prevent the lookup panic
+  version    = "56.6.2"
 
   values = [
     file("../k8s/monitoring/values.yaml"),
@@ -27,7 +27,7 @@ resource "helm_release" "postgres" {
   repository = "https://charts.bitnami.com/bitnami"
   chart      = "postgresql"
   namespace  = kubernetes_namespace.dev.metadata[0].name
-  version    = "15.5.0" # Explicitly setting a stable chart version
+  version    = "15.5.21"
 
   values = [
     file("../helm/postgres/values.dev.yaml")
@@ -35,7 +35,7 @@ resource "helm_release" "postgres" {
 
   set {
     name  = "image.tag"
-    value = "16" # This will pull the latest stable PG 16
+    value = "16.4.0"
   }
 }
 
