@@ -5,6 +5,7 @@ pipeline {
         REGISTRY = "tsingh38"
         IMAGE_NAME = "taskhub"
         DOCKERHUB_CREDENTIALS = "dockerhub-tsingh38-taskhub"
+        SLACK_WEBHOOK = credentials('slack-webhook-url')
     }
 
     stages {
@@ -15,7 +16,6 @@ pipeline {
         }
 
         stage('Application Lifecycle') {
-            //  Only run if App Code, Helm Chart, or Pipeline changes
             when {
                 anyOf {
                     changeset "services/task-service/**"
@@ -33,7 +33,6 @@ pipeline {
                                     returnStdout: true
                                 ).trim()
                                 env.APP_VERSION = version
-                                echo "Resolved app version: ${env.APP_VERSION}"
                             }
                         }
                     }
@@ -50,47 +49,32 @@ pipeline {
                     }
                 }
 
-                stage('Docker Build') {
+                stage('Docker Build & Push') {
                     steps {
                         dir('services/task-service') {
-                            sh """
-                              docker build -t ${REGISTRY}/${IMAGE_NAME}:${APP_VERSION}-${BUILD_NUMBER} .
-                            """
-                        }
-                    }
-                }
-
-                stage('Docker Push') {
-                    steps {
-                        withCredentials([usernamePassword(
-                            credentialsId: DOCKERHUB_CREDENTIALS,
-                            usernameVariable: 'DOCKER_USER',
-                            passwordVariable: 'DOCKER_PASS'
-                        )]) {
-                            sh """
-                              echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
-                              docker push ${REGISTRY}/${IMAGE_NAME}:${APP_VERSION}-${BUILD_NUMBER}
-                            """
+                            withCredentials([usernamePassword(credentialsId: DOCKERHUB_CREDENTIALS, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                                sh """
+                                  docker build -t ${REGISTRY}/${IMAGE_NAME}:${APP_VERSION}-${BUILD_NUMBER} .
+                                  echo "${PASS}" | docker login -u "${USER}" --password-stdin
+                                  docker push ${REGISTRY}/${IMAGE_NAME}:${APP_VERSION}-${BUILD_NUMBER}
+                                """
+                            }
                         }
                     }
                 }
 
                 stage('Deploy to DEV') {
                     when {
-                        expression { env.GIT_BRANCH == 'origin/develop' }
+                        branch 'develop'
                     }
                     steps {
-                        dir('infra/helm/task-service') {
+                        dir('infra/terraform') {
                             sh """
-                              helm upgrade --install task-service \
-                                . \
-                                -f values.yaml \
-                                -f values-dev.yaml \
-                                --set image.repository=${REGISTRY}/${IMAGE_NAME} \
-                                --set image.tag=${APP_VERSION}-${BUILD_NUMBER} \
-                                -n dev \
-                                --create-namespace \
-                                --wait --atomic
+                              terraform init
+                              terraform apply \
+                                -var="app_version=${APP_VERSION}-${BUILD_NUMBER}" \
+                                -var="slack_webhook_url=${env.SLACK_WEBHOOK}" \
+                                -auto-approve
                             """
                         }
                     }
@@ -100,11 +84,7 @@ pipeline {
     }
 
     post {
-        success {
-            echo "✅ Pipeline Success"
-        }
-        failure {
-            echo "❌ Pipeline Failed"
-        }
+        success { echo "✅ Pipeline Success" }
+        failure { echo "❌ Pipeline Failed" }
     }
 }
