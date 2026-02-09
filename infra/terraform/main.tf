@@ -27,11 +27,16 @@ resource "helm_release" "postgres" {
   repository = "https://charts.bitnami.com/bitnami"
   chart      = "postgresql"
   namespace  = kubernetes_namespace.dev.metadata[0].name
-  version    = "15.5.21" # Explicitly setting a stable chart version
+  version    = "15.5.0" # Explicitly setting a stable chart version
 
   values = [
     file("../helm/postgres/values.dev.yaml")
   ]
+
+  set {
+    name  = "image.tag"
+    value = "16" # This will pull the latest stable PG 16
+  }
 }
 
 # --- STEP 4: THE SLACK SECRET ---
