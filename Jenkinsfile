@@ -5,7 +5,6 @@ pipeline {
         REGISTRY = "tsingh38"
         IMAGE_NAME = "taskhub"
         DOCKERHUB_CREDENTIALS = "dockerhub-tsingh38-taskhub"
-        SLACK_WEBHOOK = credentials('slack-webhook-url')
     }
 
     stages {
@@ -23,6 +22,7 @@ pipeline {
                     changeset "Jenkinsfile"
                 }
             }
+
             stages {
                 stage('Resolve Version') {
                     steps {
@@ -52,10 +52,16 @@ pipeline {
                 stage('Docker Build & Push') {
                     steps {
                         dir('services/task-service') {
-                            withCredentials([usernamePassword(credentialsId: DOCKERHUB_CREDENTIALS, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                            withCredentials([
+                                usernamePassword(
+                                    credentialsId: DOCKERHUB_CREDENTIALS,
+                                    usernameVariable: 'USER',
+                                    passwordVariable: 'PASS'
+                                )
+                            ]) {
                                 sh """
                                   docker build -t ${REGISTRY}/${IMAGE_NAME}:${APP_VERSION}-${BUILD_NUMBER} .
-                                  echo "${PASS}" | docker login -u "${USER}" --password-stdin
+                                  echo "\$PASS" | docker login -u "\$USER" --password-stdin
                                   docker push ${REGISTRY}/${IMAGE_NAME}:${APP_VERSION}-${BUILD_NUMBER}
                                 """
                             }
@@ -69,13 +75,17 @@ pipeline {
                     }
                     steps {
                         dir('infra/terraform') {
-                            sh """
-                              terraform init
-                              terraform apply \
-                                -var="app_version=${APP_VERSION}-${BUILD_NUMBER}" \
-                                -var="slack_webhook_url=${env.SLACK_WEBHOOK}" \
-                                -auto-approve
-                            """
+                            withCredentials([
+                                string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK')
+                            ]) {
+                                sh """
+                                  terraform init
+                                  terraform apply \
+                                    -var="app_version=${APP_VERSION}-${BUILD_NUMBER}" \
+                                    -var="slack_webhook_url=\$SLACK_WEBHOOK" \
+                                    -auto-approve
+                                """
+                            }
                         }
                     }
                 }
