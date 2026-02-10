@@ -22,3 +22,8 @@ variable "slack_webhook_url" {
   type      = string
   sensitive = true
 }
+
+variable "kubeconfig_path" {
+  type        = string
+  description = "Path to kubeconfig file"
+}

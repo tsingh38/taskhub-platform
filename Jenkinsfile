@@ -85,8 +85,9 @@ pipeline {
                                   export KUBECONFIG="\$KUBECONFIG"
                                   terraform init
                                   terraform apply \
+                                    -var="kubeconfig_path=$KUBECONFIG" \
                                     -var="app_version=${APP_VERSION}-${BUILD_NUMBER}" \
-                                    -var="slack_webhook_url=\$SLACK_WEBHOOK" \
+                                    -var="slack_webhook_url=$SLACK_WEBHOOK" \
                                     -auto-approve
                                 """
                             }
