@@ -57,6 +57,7 @@ public class TaskController {
         return taskService.getTasks(pageable);
     }
 
+    
     @Operation(summary = "Retrieve a task")
     @GetMapping("/{id}")
     @Timed(value = "api.tasks.get", description = "Time taken to get a task")
