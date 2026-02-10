@@ -43,7 +43,6 @@ public class TaskController {
     @ResponseStatus(HttpStatus.CREATED)
     @Timed(value = "api.tasks.create", description = "Time taken to create a task",histogram = true)
     public TaskResponse create(@Valid @RequestBody TaskRequest request) {
-
             log.info("Creating new task: '{}'", request.title());
             return taskService.createTask(request);
 
@@ -72,7 +71,7 @@ public class TaskController {
     public TaskResponse updateTask(@PathVariable String id, @Valid @RequestBody TaskRequest request) {
             return taskService.updateTask(id, request);
         }
-        
+
     @Operation(summary = "Delete a task")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
