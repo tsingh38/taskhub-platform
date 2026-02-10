@@ -73,6 +73,7 @@ public class TaskController {
             return taskService.updateTask(id, request);
         }
 
+        
     @Operation(summary = "Delete a task")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
