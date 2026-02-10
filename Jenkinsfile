@@ -5,11 +5,12 @@ pipeline {
     REGISTRY = "tsingh38"
     IMAGE_NAME = "taskhub"
     DOCKERHUB_CREDENTIALS = "dockerhub-tsingh38-taskhub"
-    KUBECONFIG_PATH = "/var/lib/jenkins/.kube/config"
+
+    // Local kubeconfig on the SAME machine (works for jenkins user)
+    KUBECONFIG = "/var/lib/jenkins/.kube/config"
   }
 
   stages {
-
     stage('Checkout') {
       steps {
         checkout scm
@@ -27,7 +28,6 @@ pipeline {
       }
 
       stages {
-
         stage('Resolve Version') {
           steps {
             dir('services/task-service') {
@@ -57,18 +57,16 @@ pipeline {
         stage('Docker Build & Push') {
           steps {
             dir('services/task-service') {
-              withCredentials([
-                usernamePassword(
-                  credentialsId: DOCKERHUB_CREDENTIALS,
-                  usernameVariable: 'USER',
-                  passwordVariable: 'PASS'
-                )
-              ]) {
+              withCredentials([usernamePassword(
+                credentialsId: DOCKERHUB_CREDENTIALS,
+                usernameVariable: 'DOCKER_USER',
+                passwordVariable: 'DOCKER_PASS'
+              )]) {
                 sh '''
                   set -eu
                   IMAGE_TAG="${APP_VERSION}-${BUILD_NUMBER}"
 
-                  echo "$PASS" | docker login -u "$USER" --password-stdin
+                  echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                   docker build -t "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}" .
                   docker push "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
                 '''
@@ -85,37 +83,33 @@ pipeline {
           }
           steps {
             dir('infra/terraform') {
-              withCredentials([
-                string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK')
-              ]) {
+              withCredentials([string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK')]) {
                 sh '''
                   set -eu
 
-                  IMAGE_TAG="${APP_VERSION}-${BUILD_NUMBER}"
+                  # Hard fail if kubeconfig missing (this is what has been biting you)
+                  test -f "$KUBECONFIG"
+                  ls -la "$KUBECONFIG"
 
-                  export KUBECONFIG="${KUBECONFIG_PATH}"
+                  # Prove Jenkins user can reach the cluster
+                  kubectl --kubeconfig "$KUBECONFIG" get nodes
 
-                  echo "Using KUBECONFIG=${KUBECONFIG}"
-                  ls -la "${KUBECONFIG}"
-                  kubectl get nodes
+                  # Option B: namespaces must exist BEFORE Terraform/Helm
+                  kubectl --kubeconfig "$KUBECONFIG" get ns dev >/dev/null 2>&1 || kubectl --kubeconfig "$KUBECONFIG" create ns dev
+                  kubectl --kubeconfig "$KUBECONFIG" get ns monitoring >/dev/null 2>&1 || kubectl --kubeconfig "$KUBECONFIG" create ns monitoring
 
-                  # Idempotent namespace creation
-                  kubectl get ns dev >/dev/null 2>&1 || kubectl create ns dev
-                  kubectl get ns monitoring >/dev/null 2>&1 || kubectl create ns monitoring
+                  # Pass Terraform variables via environment (clean + avoids Groovy interpolation warnings)
+                  export TF_VAR_kubeconfig_path="$KUBECONFIG"
+                  export TF_VAR_app_version="${APP_VERSION}-${BUILD_NUMBER}"
+                  export TF_VAR_slack_webhook_url="$SLACK_WEBHOOK"
 
-                  terraform init
-
-                  terraform apply \
-                    -var="kubeconfig_path=${KUBECONFIG}" \
-                    -var="app_version=${IMAGE_TAG}" \
-                    -var="slack_webhook_url=${SLACK_WEBHOOK}" \
-                    -auto-approve
+                  terraform init -input=false
+                  terraform apply -auto-approve -input=false
                 '''
               }
             }
           }
         }
-
       }
     }
   }
