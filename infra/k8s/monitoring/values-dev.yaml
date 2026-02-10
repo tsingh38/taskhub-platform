@@ -2,24 +2,20 @@
 
 prometheus:
   prometheusSpec:
-    serviceMonitorSelectorNilUsesHelmValues: false
-    serviceMonitorSelector: {}
-    serviceMonitorNamespaceSelector: {}
-
-    ruleSelectorNilUsesHelmValues: false
-    ruleSelector: {}
-    ruleNamespaceSelector: {}
-
     alertingEndpoints:
       - namespace: monitoring
-        name: monitoring-kube-prometheus-alertmanager
+        name: monitoring-stack-kube-prom-alertmanager
         port: http-web
         pathPrefix: /
-
     retention: 2d
     resources:
       requests:
         memory: 256Mi
+
+grafana:
+  service:
+    type: NodePort
+    nodePort: 30030
 
 alertmanager:
   config:
