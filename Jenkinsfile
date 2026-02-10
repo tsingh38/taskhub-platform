@@ -8,6 +8,9 @@ pipeline {
 
     // Local kubeconfig on the SAME machine (works for jenkins user)
     KUBECONFIG = "/var/lib/jenkins/.kube/config"
+
+    // Option B: persistent local state (outside workspace)
+    TF_STATE_FILE = "/var/lib/jenkins/terraform-state/taskhub-dev/terraform.tfstate"
   }
 
   stages {
@@ -87,9 +90,15 @@ pipeline {
                 sh '''
                   set -eu
 
-                  # Hard fail if kubeconfig missing (this is what has been biting you)
+                  echo "Using kubeconfig: $KUBECONFIG"
+                  echo "Using TF state : $TF_STATE_FILE"
+
+                  # Hard fail if kubeconfig missing
                   test -f "$KUBECONFIG"
                   ls -la "$KUBECONFIG"
+
+                  # Ensure state dir exists (Option B)
+                  mkdir -p "$(dirname "$TF_STATE_FILE")"
 
                   # Prove Jenkins user can reach the cluster
                   kubectl --kubeconfig "$KUBECONFIG" get nodes
@@ -104,7 +113,9 @@ pipeline {
                   export TF_VAR_slack_webhook_url="$SLACK_WEBHOOK"
 
                   terraform init -input=false
-                  terraform apply -auto-approve -input=false
+
+                  # CRITICAL: always use the persistent state file (Option B)
+                  terraform apply -auto-approve -input=false -state="$TF_STATE_FILE"
                 '''
               }
             }

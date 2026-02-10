@@ -46,7 +46,7 @@ public class TaskController {
             log.info("Creating new task: '{}'", request.title());
             return taskService.createTask(request);
     }
-    
+
 
     @Operation(summary = "Retrieve all tasks (Paginated)")
     @GetMapping
