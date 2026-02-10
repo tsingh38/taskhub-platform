@@ -71,7 +71,9 @@ pipeline {
 
                 stage('Deploy to DEV') {
                     when {
-                        branch 'develop'
+                      expression {
+                        return env.GIT_BRANCH == 'origin/develop' || env.GIT_BRANCH == 'develop'
+                      }
                     }
                     steps {
                         dir('infra/terraform') {
