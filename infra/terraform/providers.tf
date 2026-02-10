@@ -11,12 +11,9 @@ terraform {
   }
 }
 
-provider "kubernetes" {
-  config_path = "/root/.kube/config"
-}
+# Uses kubeconfig from env var KUBECONFIG (set by Jenkins)
+provider "kubernetes" {}
 
 provider "helm" {
-  kubernetes {
-    config_path = "/root/.kube/config"
-  }
+  kubernetes {}
 }

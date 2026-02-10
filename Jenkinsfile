@@ -60,8 +60,8 @@ pipeline {
                                 )
                             ]) {
                                 sh """
-                                  docker build -t ${REGISTRY}/${IMAGE_NAME}:${APP_VERSION}-${BUILD_NUMBER} .
                                   echo "\$PASS" | docker login -u "\$USER" --password-stdin
+                                  docker build -t ${REGISTRY}/${IMAGE_NAME}:${APP_VERSION}-${BUILD_NUMBER} .
                                   docker push ${REGISTRY}/${IMAGE_NAME}:${APP_VERSION}-${BUILD_NUMBER}
                                 """
                             }
@@ -71,16 +71,18 @@ pipeline {
 
                 stage('Deploy to DEV') {
                     when {
-                      expression {
-                        return env.GIT_BRANCH == 'origin/develop' || env.GIT_BRANCH == 'develop'
-                      }
+                        expression {
+                            return (env.GIT_BRANCH == 'origin/develop' || env.GIT_BRANCH == 'develop' || env.BRANCH_NAME == 'develop')
+                        }
                     }
                     steps {
                         dir('infra/terraform') {
                             withCredentials([
-                                string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK')
+                                string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK'),
+                                file(credentialsId: 'kubeconfig-dev', variable: 'KUBECONFIG')
                             ]) {
                                 sh """
+                                  export KUBECONFIG="\$KUBECONFIG"
                                   terraform init
                                   terraform apply \
                                     -var="app_version=${APP_VERSION}-${BUILD_NUMBER}" \
