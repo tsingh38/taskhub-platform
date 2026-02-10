@@ -72,7 +72,6 @@ public class TaskController {
     public TaskResponse updateTask(@PathVariable String id, @Valid @RequestBody TaskRequest request) {
             return taskService.updateTask(id, request);
         }
-
         
     @Operation(summary = "Delete a task")
     @DeleteMapping("/{id}")
