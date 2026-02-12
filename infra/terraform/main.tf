@@ -48,7 +48,7 @@ resource "kubernetes_secret" "alertmanager_slack" {
 
 resource "helm_release" "task_service" {
   name      = "task-service"
-  chart     = "../helm/task-service"
+  chart     = "../helm/charts/task-service"
   namespace = "dev"
 
   values = [
