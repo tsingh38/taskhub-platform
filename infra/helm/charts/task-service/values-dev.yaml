@@ -22,7 +22,7 @@ ingress:
 # Redundant if identical to values.yaml
 probes:
   liveness:
-    enabled: true‚
+    enabled: true
     path: /actuator/health/liveness
     initialDelaySeconds: 15
     periodSeconds: 10

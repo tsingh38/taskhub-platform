@@ -24,7 +24,8 @@ pipeline {
       when {
         anyOf {
           changeset "services/task-service/**"
-          changeset "infra/helm/task-service/**"
+          changeset "infra/helm/charts/task-service/**"
+          changeset "infra/helm/values/**"
           changeset "infra/terraform/**"
           changeset "Jenkinsfile"
         }

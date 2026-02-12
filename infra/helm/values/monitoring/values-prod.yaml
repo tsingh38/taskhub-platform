@@ -1,9 +1,8 @@
-# PROD ENVIRONMENT
-# Goal: High Availability, Data Safety.
+
 
 prometheus:
   prometheusSpec:
-    retention: 30d          # Keep data for 30 days (Audit)
+    retention: 30d
     resources:
       requests:
         memory: 4Gi         # Big memory
@@ -17,5 +16,4 @@ prometheus:
 alertmanager:
   config:
     global:
-      # Send alerts to the Real Channel + PagerDuty
-      slack_api_url: "https://hooks.slack.com/.../prod-critical-alerts"
+      slack_api_url: "https://hooks.slack.com/...PLACEHOLDER"

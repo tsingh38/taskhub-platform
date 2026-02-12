@@ -6,8 +6,8 @@ resource "helm_release" "prometheus_stack" {
   version    = var.prometheus_chart_version
 
   values = [
-    file("../k8s/monitoring/values.yaml"),
-    file("../k8s/monitoring/values-dev.yaml")
+    file("../helm/values/monitoring/values.yaml"),
+    file("../helm/values/monitoring/values-dev.yaml")
   ]
 }
 
@@ -19,7 +19,7 @@ resource "helm_release" "postgres" {
   version    = var.postgres_chart_version
 
   values = [
-    file("../helm/postgres/values.dev.yaml")
+    file("../helm/values/postgres/values.dev.yaml")
   ]
 
   set {
@@ -52,8 +52,8 @@ resource "helm_release" "task_service" {
   namespace = "dev"
 
   values = [
-    file("../helm/task-service/values.yaml"),
-    file("../helm/task-service/values-dev.yaml")
+    file("../helm/charts/task-service/values.yaml"),
+    file("../helm/charts/task-service/values-dev.yaml")
   ]
 
   set {

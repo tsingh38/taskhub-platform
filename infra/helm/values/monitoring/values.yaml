@@ -9,9 +9,8 @@ alertmanager:
       group_wait: 30s
       group_interval: 5m
       repeat_interval: 12h
-      receiver: 'slack-notifications' # Default receiver
+      receiver: 'slack-notifications'
       routes:
-        # Route "Critical" alerts to a loud channel (or PagerDuty)
         - match:
             severity: critical
           receiver: 'slack-critical'

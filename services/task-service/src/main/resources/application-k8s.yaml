@@ -7,8 +7,6 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
-# --- Un-indent these to the root level ---
-
 springdoc:
   api-docs:
     path: /v3/api-docs
