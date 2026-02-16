@@ -6,10 +6,7 @@ pipeline {
     IMAGE_NAME = "taskhub"
     DOCKERHUB_CREDENTIALS = "dockerhub-tsingh38-taskhub"
 
-    // Local kubeconfig on the SAME machine (works for jenkins user)
     KUBECONFIG = "/var/lib/jenkins/.kube/config"
-
-    // Option B: persistent local state (outside workspace)
     TF_STATE_FILE = "/var/lib/jenkins/terraform-state/taskhub-dev/terraform.tfstate"
   }
 
@@ -105,25 +102,20 @@ pipeline {
                   # Ensure state dir exists (Option B)
                   mkdir -p "$(dirname "$TF_STATE_FILE")"
 
-                  # Prove Jenkins user can reach the cluster
                   kubectl --kubeconfig "$KUBECONFIG" get nodes
 
-                  # Option B: namespaces must exist BEFORE Terraform/Helm
                   kubectl --kubeconfig "$KUBECONFIG" get ns dev >/dev/null 2>&1 || kubectl --kubeconfig "$KUBECONFIG" create ns dev
                   kubectl --kubeconfig "$KUBECONFIG" get ns monitoring >/dev/null 2>&1 || kubectl --kubeconfig "$KUBECONFIG" create ns monitoring
 
-                  # Pass Terraform variables via environment (clean + avoids Groovy interpolation warnings)
+                  # exporting variables so that terraform can read them
                   export TF_VAR_kubeconfig_path="$KUBECONFIG"
                   export TF_VAR_app_version="${APP_VERSION}-${BUILD_NUMBER}"
                   export TF_VAR_slack_webhook_url="$SLACK_WEBHOOK"
-
-                  # NEW: DB credentials (Jenkins -> Terraform -> K8s Secret)
                   export TF_VAR_db_user="$DB_USER"
                   export TF_VAR_db_password="$DB_PASSWORD"
 
                   terraform init -input=false
 
-                  # CRITICAL: always use the persistent state file (Option B)
                   terraform apply -auto-approve -input=false -state="$TF_STATE_FILE"
                 '''
               }

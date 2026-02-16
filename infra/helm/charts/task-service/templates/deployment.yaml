@@ -21,20 +21,22 @@ spec:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
               protocol: TCP
+
           envFrom:
             - configMapRef:
                 name: {{ .Release.Name }}-config
+
           env:
-              - name: DB_USER
-                valueFrom:
-                  secretKeyRef:
-                    name: db-credentials
-                    key: postgres-user
-                  - name: DB_PASSWORD
-                    valueFrom:
-                      secretKeyRef:
-                        name: db-credentials
-                        key: postgres-password
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: postgres-user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: postgres-password
 
           # --- DYNAMIC PROBES START ---
           {{- if .Values.probes.liveness.enabled }}
