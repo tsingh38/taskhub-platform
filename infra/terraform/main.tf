@@ -81,6 +81,7 @@ resource "kubernetes_secret" "alertmanager_slack" {
   type = "Opaque"
 }
 
+
 resource "helm_release" "task_service" {
   name      = "task-service"
   chart     = "../helm/charts/task-service"
