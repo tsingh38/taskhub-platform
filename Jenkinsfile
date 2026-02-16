@@ -87,7 +87,11 @@ pipeline {
           }
           steps {
             dir('infra/terraform') {
-              withCredentials([string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK')]) {
+              withCredentials([
+                string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK'),
+                string(credentialsId: 'db-user', variable: 'DB_USER'),
+                string(credentialsId: 'db-password', variable: 'DB_PASSWORD')
+              ]) {
                 sh '''
                   set -eu
 
@@ -112,6 +116,10 @@ pipeline {
                   export TF_VAR_kubeconfig_path="$KUBECONFIG"
                   export TF_VAR_app_version="${APP_VERSION}-${BUILD_NUMBER}"
                   export TF_VAR_slack_webhook_url="$SLACK_WEBHOOK"
+
+                  # NEW: DB credentials (Jenkins -> Terraform -> K8s Secret)
+                  export TF_VAR_db_user="$DB_USER"
+                  export TF_VAR_db_password="$DB_PASSWORD"
 
                   terraform init -input=false
 

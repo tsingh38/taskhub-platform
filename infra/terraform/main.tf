@@ -31,6 +31,8 @@ resource "helm_release" "postgres" {
     name  = "image.tag"
     value = var.postgres_image_tag
   }
+
+    depends_on = [kubernetes_secret.db_credentials]
 }
 
 resource "kubernetes_secret" "alertmanager_slack" {
@@ -41,6 +43,20 @@ resource "kubernetes_secret" "alertmanager_slack" {
 
   data = {
     token = var.slack_webhook_url
+  }
+
+  type = "Opaque"
+}
+
+resource "kubernetes_secret" "db_credentials" {
+  metadata {
+    name      = "db-credentials"
+    namespace = "dev"
+  }
+
+  data = {
+    postgres-user     = var.db_user
+    postgres-password = var.db_password
   }
 
   type = "Opaque"

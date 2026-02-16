@@ -24,8 +24,17 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ .Release.Name }}-config
-            - secretRef:
-                name: {{ .Release.Name }}-secrets
+          env:
+              - name: DB_USER
+                valueFrom:
+                  secretKeyRef:
+                    name: db-credentials
+                    key: postgres-user
+                  - name: DB_PASSWORD
+                    valueFrom:
+                      secretKeyRef:
+                        name: db-credentials
+                        key: postgres-password
 
           # --- DYNAMIC PROBES START ---
           {{- if .Values.probes.liveness.enabled }}

@@ -1,7 +1,6 @@
 auth:
-  username: taskuser
-  password: taskpass
   database: taskdb
+  existingSecret: db-credentials
 
 primary:
   persistence:
