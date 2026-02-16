@@ -11,6 +11,21 @@ resource "helm_release" "prometheus_stack" {
   ]
 }
 
+resource "kubernetes_secret" "db_credentials" {
+  metadata {
+    name      = "db-credentials"
+    namespace = "dev"
+  }
+
+  data = {
+    username          = var.db_user
+    password          = var.db_password
+    postgres-password = var.db_password
+  }
+
+  type = "Opaque"
+}
+
 resource "helm_release" "postgres" {
   name       = "postgres"
   repository = "https://charts.bitnami.com/bitnami"
@@ -32,7 +47,25 @@ resource "helm_release" "postgres" {
     value = var.postgres_image_tag
   }
 
-    depends_on = [kubernetes_secret.db_credentials]
+  # NEW: tell Bitnami Postgres to use the Terraform-created secret
+  set {
+    name  = "auth.existingSecret"
+    value = "db-credentials"
+  }
+
+  # NEW: keep username out of Git; pass it from Terraform var (Jenkins -> TF_VAR_db_user)
+  set {
+    name  = "auth.username"
+    value = var.db_user
+  }
+
+  # NEW: set database name explicitly (not secret)
+  set {
+    name  = "auth.database"
+    value = "taskdb"
+  }
+
+  depends_on = [kubernetes_secret.db_credentials]
 }
 
 resource "kubernetes_secret" "alertmanager_slack" {
@@ -43,20 +76,6 @@ resource "kubernetes_secret" "alertmanager_slack" {
 
   data = {
     token = var.slack_webhook_url
-  }
-
-  type = "Opaque"
-}
-
-resource "kubernetes_secret" "db_credentials" {
-  metadata {
-    name      = "db-credentials"
-    namespace = "dev"
-  }
-
-  data = {
-    postgres-user     = var.db_user
-    postgres-password = var.db_password
   }
 
   type = "Opaque"
@@ -77,5 +96,8 @@ resource "helm_release" "task_service" {
     value = var.app_version
   }
 
-  depends_on = [helm_release.postgres]
+  depends_on = [
+    helm_release.postgres,
+    kubernetes_secret.db_credentials
+  ]
 }

@@ -31,12 +31,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: db-credentials
-                  key: postgres-user
+                  key: username
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: db-credentials
-                  key: postgres-password
+                  key: password
 
           # --- DYNAMIC PROBES START ---
           {{- if .Values.probes.liveness.enabled }}
