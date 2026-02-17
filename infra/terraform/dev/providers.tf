@@ -11,6 +11,11 @@ terraform {
   }
 }
 
+variable "kubeconfig_path" {
+  type        = string
+  description = "Absolute path to kubeconfig"
+}
+
 provider "kubernetes" {
   config_path = var.kubeconfig_path
 }
