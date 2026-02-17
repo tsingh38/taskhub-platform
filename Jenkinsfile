@@ -1,6 +1,14 @@
 pipeline {
   agent any
 
+  parameters {
+    booleanParam(
+      name: 'BOOTSTRAP_MONITORING',
+      defaultValue: false,
+      description: 'One-time: import existing monitoring Helm release into Terraform state (if it already exists)'
+    )
+  }
+
   environment {
     REGISTRY = "tsingh38"
     IMAGE_NAME = "taskhub"
@@ -18,29 +26,36 @@ pipeline {
     stage('Checkout') {
       steps { checkout scm }
     }
-stage('Terraform Monitoring (one-time)') {
-  steps {
-    dir('infra/terraform/monitoring') {
-      withCredentials([
-        string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK')
-      ]) {
-        sh '''
-          set -eu
-          mkdir -p /var/lib/jenkins/terraform-state/taskhub-monitoring
 
-          export TF_VAR_kubeconfig_path="$KUBECONFIG"
-          export TF_VAR_slack_webhook_url="$SLACK_WEBHOOK"
+    stage('Terraform Monitoring (one-time)') {
+      when { expression { return params.BOOTSTRAP_MONITORING == true } }
+      steps {
+        dir('infra/terraform/monitoring') {
+          withCredentials([string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK')]) {
+            sh '''
+              set -eu
+              test -f "$KUBECONFIG"
+              mkdir -p "$(dirname "$TF_STATE_MONITORING")"
 
-          terraform init -reconfigure -input=false \
-            -backend-config="path=/var/lib/jenkins/terraform-state/taskhub-monitoring/terraform.tfstate"
+              export TF_VAR_kubeconfig_path="$KUBECONFIG"
+              export TF_VAR_slack_webhook_url="$SLACK_WEBHOOK"
 
-          terraform plan
-          terraform apply -auto-approve -input=false
-        '''
+              terraform init -reconfigure -input=false \
+                -backend-config="path=$TF_STATE_MONITORING"
+
+              # Import existing Helm release if it's in the cluster but missing in state
+              if ! terraform state list | grep -q '^helm_release\\.prometheus_stack$'; then
+                terraform import -input=false helm_release.prometheus_stack monitoring/monitoring-stack || true
+              fi
+
+              terraform plan
+              terraform apply -auto-approve -input=false
+            '''
+          }
+        }
       }
     }
-  }
-}
+
     stage('Resolve Version') {
       steps {
         dir('services/task-service') {
@@ -155,9 +170,7 @@ stage('Terraform Monitoring (one-time)') {
       }
       steps {
         dir('infra/terraform/monitoring') {
-          withCredentials([
-            string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK')
-          ]) {
+          withCredentials([string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK')]) {
             sh '''
               set -eu
               test -f "$KUBECONFIG"
@@ -167,6 +180,12 @@ stage('Terraform Monitoring (one-time)') {
               export TF_VAR_slack_webhook_url="$SLACK_WEBHOOK"
 
               terraform init -input=false -backend-config="path=$TF_STATE_MONITORING"
+
+              # Safety: if state got wiped but release exists, import it so apply doesn't fail
+              if ! terraform state list | grep -q '^helm_release\\.prometheus_stack$'; then
+                terraform import -input=false helm_release.prometheus_stack monitoring/monitoring-stack || true
+              fi
+
               terraform apply -auto-approve -input=false
             '''
           }
