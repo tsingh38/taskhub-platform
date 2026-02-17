@@ -301,7 +301,7 @@ pipeline {
               export TF_VAR_db_user_dev="$DB_USER_DEV"
               export TF_VAR_db_password_dev="$DB_PASSWORD_DEV"
 
-              terraform init -input=false -backend-config="path=$TF_STATE_DEV"
+              terraform init -reconfigure -input=false -backend-config="path=$TF_STATE_DEV"
 
               # Safety imports (if state is empty but objects exist)
               terraform import -input=false kubernetes_namespace.dev dev || true
