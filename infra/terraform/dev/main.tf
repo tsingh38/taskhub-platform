@@ -11,9 +11,11 @@ resource "kubernetes_secret" "db_credentials_dev" {
   }
 
   data = {
-    postgres-user     = var.db_user_dev
+    username         = var.db_user_dev
+    password         = var.db_password_dev
     postgres-password = var.db_password_dev
   }
+
 
   type = "Opaque"
 

@@ -2,11 +2,9 @@ pipeline {
   agent any
 
   parameters {
-    booleanParam(
-      name: 'BOOTSTRAP_MONITORING',
-      defaultValue: false,
-      description: 'One-time: import existing monitoring Helm release into Terraform state (if it already exists)'
-    )
+    booleanParam(name: 'BOOTSTRAP_MONITORING', defaultValue: false, description: 'One-time: import monitoring resources into state')
+    booleanParam(name: 'BOOTSTRAP_DEV',        defaultValue: false, description: 'One-time: import dev resources into state')
+    booleanParam(name: 'BOOTSTRAP_PROD',       defaultValue: false, description: 'One-time: import prod resources into state')
   }
 
   environment {
@@ -16,8 +14,8 @@ pipeline {
     KUBECONFIG = "/var/lib/jenkins/.kube/config"
 
     TF_STATE_MONITORING = "/var/lib/jenkins/terraform-state/taskhub-monitoring/terraform.tfstate"
-    TF_STATE_DEV        = "/var/lib/jenkins/terraform-state/taskhub-dev/terraform.tfstate"
-    TF_STATE_PROD       = "/var/lib/jenkins/terraform-state/taskhub-prod/terraform.tfstate"
+    TF_STATE_DEV        = "/var/lib/jenkins/terraform-state/taskhub-dev/terraform.dev.tfstate"
+    TF_STATE_PROD       = "/var/lib/jenkins/terraform-state/taskhub-prod/terraform.prod.tfstate"
 
     TRIVY_CACHE_DIR = "/var/lib/jenkins/.cache/trivy"
   }
@@ -27,6 +25,9 @@ pipeline {
       steps { checkout scm }
     }
 
+    // -------------------------
+    // BOOTSTRAP: MONITORING
+    // -------------------------
     stage('Terraform Monitoring (one-time)') {
       when { expression { return params.BOOTSTRAP_MONITORING == true } }
       steps {
@@ -40,13 +41,14 @@ pipeline {
               export TF_VAR_kubeconfig_path="$KUBECONFIG"
               export TF_VAR_slack_webhook_url="$SLACK_WEBHOOK"
 
-              terraform init -reconfigure -input=false \
-                -backend-config="path=$TF_STATE_MONITORING"
+              terraform init -reconfigure -input=false -backend-config="path=$TF_STATE_MONITORING"
 
-              # Import existing Helm release if it's in the cluster but missing in state
-              if ! terraform state list | grep -q '^helm_release\\.prometheus_stack$'; then
-                terraform import -input=false helm_release.prometheus_stack monitoring/monitoring-stack || true
-              fi
+              # Import namespace/secret if they exist but are missing in state
+              terraform import -input=false kubernetes_namespace.monitoring monitoring || true
+              terraform import -input=false kubernetes_secret.alertmanager_slack monitoring/alertmanager-slack-token || true
+
+              # Import helm release if it exists but is missing in state
+              terraform import -input=false helm_release.prometheus_stack monitoring/monitoring-stack || true
 
               terraform plan
               terraform apply -auto-approve -input=false
@@ -56,6 +58,84 @@ pipeline {
       }
     }
 
+    // -------------------------
+    // BOOTSTRAP: DEV
+    // -------------------------
+    stage('Terraform DEV (one-time)') {
+      when { expression { return params.BOOTSTRAP_DEV == true } }
+      steps {
+        dir('infra/terraform/dev') {
+          withCredentials([
+            string(credentialsId: 'db-user', variable: 'DB_USER_DEV'),
+            string(credentialsId: 'db-password', variable: 'DB_PASSWORD_DEV')
+          ]) {
+            sh '''
+              set -eu
+              test -f "$KUBECONFIG"
+              mkdir -p "$(dirname "$TF_STATE_DEV")"
+
+              export TF_VAR_kubeconfig_path="$KUBECONFIG"
+              export TF_VAR_db_user_dev="$DB_USER_DEV"
+              export TF_VAR_db_password_dev="$DB_PASSWORD_DEV"
+              # app_version not needed for import; only needed for apply/upgrade
+              export TF_VAR_app_version="bootstrap"
+
+              terraform init -reconfigure -input=false -backend-config="path=$TF_STATE_DEV"
+
+              terraform import -input=false kubernetes_namespace.dev dev || true
+              terraform import -input=false kubernetes_secret.db_credentials_dev dev/db-credentials || true
+
+              terraform import -input=false helm_release.postgres_dev dev/postgres || true
+              terraform import -input=false helm_release.task_service_dev dev/task-service || true
+
+              terraform plan
+              terraform apply -auto-approve -input=false
+            '''
+          }
+        }
+      }
+    }
+
+    // -------------------------
+    // BOOTSTRAP: PROD
+    // -------------------------
+    stage('Terraform PROD (one-time)') {
+      when { expression { return params.BOOTSTRAP_PROD == true } }
+      steps {
+        dir('infra/terraform/prod') {
+          withCredentials([
+            string(credentialsId: 'db-user-prod', variable: 'DB_USER_PROD'),
+            string(credentialsId: 'db-password-prod', variable: 'DB_PASSWORD_PROD')
+          ]) {
+            sh '''
+              set -eu
+              test -f "$KUBECONFIG"
+              mkdir -p "$(dirname "$TF_STATE_PROD")"
+
+              export TF_VAR_kubeconfig_path="$KUBECONFIG"
+              export TF_VAR_db_user_prod="$DB_USER_PROD"
+              export TF_VAR_db_password_prod="$DB_PASSWORD_PROD"
+              export TF_VAR_app_version="bootstrap"
+
+              terraform init -reconfigure -input=false -backend-config="path=$TF_STATE_PROD"
+
+              terraform import -input=false kubernetes_namespace.prod prod || true
+              terraform import -input=false kubernetes_secret.db_credentials_prod prod/db-credentials || true
+
+              terraform import -input=false helm_release.postgres_prod prod/postgres || true
+              terraform import -input=false helm_release.task_service_prod prod/task-service || true
+
+              terraform plan
+              terraform apply -auto-approve -input=false
+            '''
+          }
+        }
+      }
+    }
+
+    // -------------------------
+    // Build pipeline continues
+    // -------------------------
     stage('Resolve Version') {
       steps {
         dir('services/task-service') {
@@ -162,6 +242,9 @@ pipeline {
       }
     }
 
+    // -------------------------
+    // Deploy MONITORING (normal)
+    // -------------------------
     stage('Deploy MONITORING') {
       when {
         expression {
@@ -181,10 +264,10 @@ pipeline {
 
               terraform init -input=false -backend-config="path=$TF_STATE_MONITORING"
 
-              # Safety: if state got wiped but release exists, import it so apply doesn't fail
-              if ! terraform state list | grep -q '^helm_release\\.prometheus_stack$'; then
-                terraform import -input=false helm_release.prometheus_stack monitoring/monitoring-stack || true
-              fi
+              # Safety import (prevents "cannot re-use name" / state-wiped scenarios)
+              terraform import -input=false kubernetes_namespace.monitoring monitoring || true
+              terraform import -input=false kubernetes_secret.alertmanager_slack monitoring/alertmanager-slack-token || true
+              terraform import -input=false helm_release.prometheus_stack monitoring/monitoring-stack || true
 
               terraform apply -auto-approve -input=false
             '''
@@ -193,6 +276,9 @@ pipeline {
       }
     }
 
+    // -------------------------
+    // Deploy DEV (normal)
+    // -------------------------
     stage('Deploy DEV') {
       when {
         expression {
@@ -216,6 +302,13 @@ pipeline {
               export TF_VAR_db_password_dev="$DB_PASSWORD_DEV"
 
               terraform init -input=false -backend-config="path=$TF_STATE_DEV"
+
+              # Safety imports (if state is empty but objects exist)
+              terraform import -input=false kubernetes_namespace.dev dev || true
+              terraform import -input=false kubernetes_secret.db_credentials_dev dev/db-credentials || true
+              terraform import -input=false helm_release.postgres_dev dev/postgres || true
+              terraform import -input=false helm_release.task_service_dev dev/task-service || true
+
               terraform apply -auto-approve -input=false
             '''
           }
@@ -223,10 +316,11 @@ pipeline {
       }
     }
 
+    // -------------------------
+    // Deploy PROD (manual approval)
+    // -------------------------
     stage('Deploy PROD (Manual Approval)') {
-      when {
-        expression { return (env.TAG_NAME != null && env.TAG_NAME?.trim()) }
-      }
+      when { expression { return (env.TAG_NAME != null && env.TAG_NAME?.trim()) } }
       steps {
         input message: "Deploy tag ${env.TAG_NAME} to PROD?", ok: "Approve"
 
@@ -246,6 +340,13 @@ pipeline {
               export TF_VAR_db_password_prod="$DB_PASSWORD_PROD"
 
               terraform init -input=false -backend-config="path=$TF_STATE_PROD"
+
+              # Safety imports
+              terraform import -input=false kubernetes_namespace.prod prod || true
+              terraform import -input=false kubernetes_secret.db_credentials_prod prod/db-credentials || true
+              terraform import -input=false helm_release.postgres_prod prod/postgres || true
+              terraform import -input=false helm_release.task_service_prod prod/task-service || true
+
               terraform apply -auto-approve -input=false
             '''
           }

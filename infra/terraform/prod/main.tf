@@ -10,8 +10,9 @@ resource "kubernetes_secret" "db_credentials_prod" {
     namespace = "prod"
   }
 
-  data = {
-    postgres-user     = var.db_user_prod
+data = {
+    username         = var.db_user_prod
+    password         = var.db_password_prod
     postgres-password = var.db_password_prod
   }
 
