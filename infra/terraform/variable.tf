@@ -28,12 +28,22 @@ variable "kubeconfig_path" {
   description = "Path to kubeconfig file"
 }
 
-variable "db_user" {
+variable "db_user_dev" {
   type      = string
   sensitive = true
 }
 
-variable "db_password" {
+variable "db_password_dev" {
+  type      = string
+  sensitive = true
+}
+
+variable "db_user_prod" {
+  type      = string
+  sensitive = true
+}
+
+variable "db_password_prod" {
   type      = string
   sensitive = true
 }

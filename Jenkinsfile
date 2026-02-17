@@ -5,8 +5,12 @@ pipeline {
     REGISTRY = "tsingh38"
     IMAGE_NAME = "taskhub"
     DOCKERHUB_CREDENTIALS = "dockerhub-tsingh38-taskhub"
+
     KUBECONFIG = "/var/lib/jenkins/.kube/config"
-    TF_STATE_FILE = "/var/lib/jenkins/terraform-state/taskhub-dev/terraform.tfstate"
+
+    TF_STATE_FILE_DEV  = "/var/lib/jenkins/terraform-state/taskhub-dev/terraform.tfstate"
+    TF_STATE_FILE_PROD = "/var/lib/jenkins/terraform-state/taskhub-prod/terraform.tfstate"
+
     TRIVY_CACHE_DIR = "/var/lib/jenkins/.cache/trivy"
   }
 
@@ -25,6 +29,7 @@ pipeline {
           changeset "infra/helm/values/**"
           changeset "infra/terraform/**"
           changeset "Jenkinsfile"
+          expression { return (env.TAG_NAME != null && env.TAG_NAME?.trim()) }
         }
       }
 
@@ -71,12 +76,20 @@ pipeline {
               )]) {
                 sh '''
                   set -eu
-                  IMAGE_TAG="${APP_VERSION}-${BUILD_NUMBER}"
+
+                  if [ -n "${TAG_NAME:-}" ]; then
+                    IMAGE_TAG="${TAG_NAME}"
+                  else
+                    IMAGE_TAG="${APP_VERSION}-${BUILD_NUMBER}"
+                  fi
+
                   IMAGE="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
 
                   echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                   docker build -t "$IMAGE" .
                   docker push "$IMAGE"
+
+                  echo "Pushed: $IMAGE"
                 '''
               }
             }
@@ -93,7 +106,13 @@ pipeline {
               )]) {
                 sh '''
                   set -eu
-                  IMAGE_TAG="${APP_VERSION}-${BUILD_NUMBER}"
+
+                  if [ -n "${TAG_NAME:-}" ]; then
+                    IMAGE_TAG="${TAG_NAME}"
+                  else
+                    IMAGE_TAG="${APP_VERSION}-${BUILD_NUMBER}"
+                  fi
+
                   IMAGE="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
 
                   mkdir -p "$TRIVY_CACHE_DIR"
@@ -133,28 +152,64 @@ pipeline {
             dir('infra/terraform') {
               withCredentials([
                 string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK'),
-                string(credentialsId: 'db-user', variable: 'DB_USER'),
-                string(credentialsId: 'db-password', variable: 'DB_PASSWORD')
+                string(credentialsId: 'db-user', variable: 'DB_USER_DEV'),
+                string(credentialsId: 'db-password', variable: 'DB_PASSWORD_DEV'),
+                string(credentialsId: 'db-user-prod', variable: 'DB_USER_PROD'),
+                string(credentialsId: 'db-password-prod', variable: 'DB_PASSWORD_PROD')
               ]) {
                 sh '''
                   set -eu
 
                   test -f "$KUBECONFIG"
-                  mkdir -p "$(dirname "$TF_STATE_FILE")"
-
-                  kubectl --kubeconfig "$KUBECONFIG" get nodes
-
-                  kubectl --kubeconfig "$KUBECONFIG" get ns dev >/dev/null 2>&1 || kubectl --kubeconfig "$KUBECONFIG" create ns dev
-                  kubectl --kubeconfig "$KUBECONFIG" get ns monitoring >/dev/null 2>&1 || kubectl --kubeconfig "$KUBECONFIG" create ns monitoring
+                  mkdir -p "$(dirname "$TF_STATE_FILE_DEV")"
 
                   export TF_VAR_kubeconfig_path="$KUBECONFIG"
                   export TF_VAR_app_version="${APP_VERSION}-${BUILD_NUMBER}"
                   export TF_VAR_slack_webhook_url="$SLACK_WEBHOOK"
-                  export TF_VAR_db_user="$DB_USER"
-                  export TF_VAR_db_password="$DB_PASSWORD"
+                  export TF_VAR_db_user_dev="$DB_USER_DEV"
+                  export TF_VAR_db_password_dev="$DB_PASSWORD_DEV"
+                  export TF_VAR_db_user_prod="$DB_USER_PROD"
+                  export TF_VAR_db_password_prod="$DB_PASSWORD_PROD"
 
                   terraform init -input=false
-                  terraform apply -auto-approve -input=false -state="$TF_STATE_FILE"
+                  terraform apply -auto-approve -input=false -state="$TF_STATE_FILE_DEV"
+                '''
+              }
+            }
+          }
+        }
+
+        stage('Deploy to PROD (Manual Approval)') {
+          when {
+            expression { return (env.TAG_NAME != null && env.TAG_NAME?.trim()) }
+          }
+          steps {
+            input message: "Deploy tag ${env.TAG_NAME} to PROD?", ok: "Approve"
+
+            dir('infra/terraform') {
+              withCredentials([
+                string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK'),
+                string(credentialsId: 'db-user', variable: 'DB_USER_DEV'),
+                string(credentialsId: 'db-password', variable: 'DB_PASSWORD_DEV'),
+                string(credentialsId: 'db-user-prod', variable: 'DB_USER_PROD'),
+                string(credentialsId: 'db-password-prod', variable: 'DB_PASSWORD_PROD')
+              ]) {
+                sh '''
+                  set -eu
+
+                  test -f "$KUBECONFIG"
+                  mkdir -p "$(dirname "$TF_STATE_FILE_PROD")"
+
+                  export TF_VAR_kubeconfig_path="$KUBECONFIG"
+                  export TF_VAR_app_version="${TAG_NAME}"
+                  export TF_VAR_slack_webhook_url="$SLACK_WEBHOOK"
+                  export TF_VAR_db_user_dev="$DB_USER_DEV"
+                  export TF_VAR_db_password_dev="$DB_PASSWORD_DEV"
+                  export TF_VAR_db_user_prod="$DB_USER_PROD"
+                  export TF_VAR_db_password_prod="$DB_PASSWORD_PROD"
+
+                  terraform init -input=false
+                  terraform apply -auto-approve -input=false -state="$TF_STATE_FILE_PROD"
                 '''
               }
             }

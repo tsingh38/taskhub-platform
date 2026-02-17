@@ -31,14 +31,13 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: db-credentials
-                  key: username
+                  key: postgres-user
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: db-credentials
-                  key: password
+                  key: postgres-password
 
-          # --- DYNAMIC PROBES START ---
           {{- if .Values.probes.liveness.enabled }}
           livenessProbe:
             httpGet:
@@ -58,7 +57,6 @@ spec:
             periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
             failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
           {{- end }}
-          # --- DYNAMIC PROBES END ---
 
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
