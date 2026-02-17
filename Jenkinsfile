@@ -18,7 +18,29 @@ pipeline {
     stage('Checkout') {
       steps { checkout scm }
     }
+stage('Terraform Monitoring (one-time)') {
+  steps {
+    dir('infra/terraform/monitoring') {
+      withCredentials([
+        string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK')
+      ]) {
+        sh '''
+          set -eu
+          mkdir -p /var/lib/jenkins/terraform-state/taskhub-monitoring
 
+          export TF_VAR_kubeconfig_path="$KUBECONFIG"
+          export TF_VAR_slack_webhook_url="$SLACK_WEBHOOK"
+
+          terraform init -reconfigure -input=false \
+            -backend-config="path=/var/lib/jenkins/terraform-state/taskhub-monitoring/terraform.tfstate"
+
+          terraform plan
+          terraform apply -auto-approve -input=false
+        '''
+      }
+    }
+  }
+}
     stage('Resolve Version') {
       steps {
         dir('services/task-service') {
