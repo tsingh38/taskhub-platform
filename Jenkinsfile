@@ -5,9 +5,9 @@ pipeline {
     REGISTRY = "tsingh38"
     IMAGE_NAME = "taskhub"
     DOCKERHUB_CREDENTIALS = "dockerhub-tsingh38-taskhub"
-
     KUBECONFIG = "/var/lib/jenkins/.kube/config"
     TF_STATE_FILE = "/var/lib/jenkins/terraform-state/taskhub-dev/terraform.tfstate"
+    TRIVY_CACHE_DIR = "/var/lib/jenkins/.cache/trivy"
   }
 
   stages {
@@ -66,10 +66,43 @@ pipeline {
                 sh '''
                   set -eu
                   IMAGE_TAG="${APP_VERSION}-${BUILD_NUMBER}"
+                  IMAGE="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
 
                   echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                  docker build -t "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}" .
-                  docker push "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+                  docker build -t "$IMAGE" .
+                  docker push "$IMAGE"
+                '''
+              }
+            }
+          }
+        }
+
+        stage('Trivy Scan (HIGH/CRITICAL gate)') {
+          steps {
+            dir('services/task-service') {
+              withCredentials([usernamePassword(
+                credentialsId: DOCKERHUB_CREDENTIALS,
+                usernameVariable: 'DOCKER_USER',
+                passwordVariable: 'DOCKER_PASS'
+              )]) {
+                sh '''
+                  set -eu
+                  IMAGE_TAG="${APP_VERSION}-${BUILD_NUMBER}"
+                  IMAGE="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+
+                  mkdir -p "$TRIVY_CACHE_DIR"
+
+                  docker run --rm \
+                    -v "$TRIVY_CACHE_DIR:/root/.cache/" \
+                    aquasec/trivy:latest \
+                    image \
+                    --timeout 5m \
+                    --no-progress \
+                    --severity HIGH,CRITICAL \
+                    --exit-code 1 \
+                    --username "$DOCKER_USER" \
+                    --password "$DOCKER_PASS" \
+                    "$IMAGE"
                 '''
               }
             }
@@ -92,14 +125,7 @@ pipeline {
                 sh '''
                   set -eu
 
-                  echo "Using kubeconfig: $KUBECONFIG"
-                  echo "Using TF state : $TF_STATE_FILE"
-
-                  # Hard fail if kubeconfig missing
                   test -f "$KUBECONFIG"
-                  ls -la "$KUBECONFIG"
-
-                  # Ensure state dir exists (Option B)
                   mkdir -p "$(dirname "$TF_STATE_FILE")"
 
                   kubectl --kubeconfig "$KUBECONFIG" get nodes
@@ -107,7 +133,6 @@ pipeline {
                   kubectl --kubeconfig "$KUBECONFIG" get ns dev >/dev/null 2>&1 || kubectl --kubeconfig "$KUBECONFIG" create ns dev
                   kubectl --kubeconfig "$KUBECONFIG" get ns monitoring >/dev/null 2>&1 || kubectl --kubeconfig "$KUBECONFIG" create ns monitoring
 
-                  # exporting variables so that terraform can read them
                   export TF_VAR_kubeconfig_path="$KUBECONFIG"
                   export TF_VAR_app_version="${APP_VERSION}-${BUILD_NUMBER}"
                   export TF_VAR_slack_webhook_url="$SLACK_WEBHOOK"
@@ -115,7 +140,6 @@ pipeline {
                   export TF_VAR_db_password="$DB_PASSWORD"
 
                   terraform init -input=false
-
                   terraform apply -auto-approve -input=false -state="$TF_STATE_FILE"
                 '''
               }
