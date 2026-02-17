@@ -49,8 +49,14 @@ pipeline {
               sh '''
                 set -eu
                 chmod +x gradlew
-                ./gradlew clean build
+                ./gradlew clean test
               '''
+            }
+          }
+          post {
+            always {
+              junit allowEmptyResults: true, testResults: 'services/task-service/build/test-results/test/*.xml'
+              archiveArtifacts artifacts: 'services/task-service/build/reports/tests/test/**', allowEmptyArchive: true
             }
           }
         }
@@ -94,17 +100,25 @@ pipeline {
 
                   docker run --rm \
                     -v "$TRIVY_CACHE_DIR:/root/.cache/" \
+                    -v "$WORKSPACE:/work" \
                     aquasec/trivy:latest \
                     image \
                     --timeout 5m \
                     --no-progress \
                     --severity HIGH,CRITICAL \
                     --exit-code 1 \
+                    --format json \
+                    -o /work/trivy-report.json \
                     --username "$DOCKER_USER" \
                     --password "$DOCKER_PASS" \
                     "$IMAGE"
                 '''
               }
+            }
+          }
+          post {
+            always {
+              archiveArtifacts artifacts: 'trivy-report.json', fingerprint: true, onlyIfSuccessful: false
             }
           }
         }
