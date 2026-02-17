@@ -1,5 +1,7 @@
 resource "kubernetes_namespace" "monitoring" {
-  metadata { name = "monitoring" }
+  metadata {
+    name = "monitoring"
+  }
 }
 
 resource "kubernetes_secret" "alertmanager_slack" {
@@ -12,7 +14,8 @@ resource "kubernetes_secret" "alertmanager_slack" {
     token = var.slack_webhook_url
   }
 
-  type       = "Opaque"
+  type = "Opaque"
+
   depends_on = [kubernetes_namespace.monitoring]
 }
 

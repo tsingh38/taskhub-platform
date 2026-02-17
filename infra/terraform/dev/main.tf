@@ -1,5 +1,7 @@
 resource "kubernetes_namespace" "dev" {
-  metadata { name = "dev" }
+  metadata {
+    name = "dev"
+  }
 }
 
 resource "kubernetes_secret" "db_credentials_dev" {
@@ -13,7 +15,8 @@ resource "kubernetes_secret" "db_credentials_dev" {
     postgres-password = var.db_password_dev
   }
 
-  type       = "Opaque"
+  type = "Opaque"
+
   depends_on = [kubernetes_namespace.dev]
 }
 
@@ -28,12 +31,30 @@ resource "helm_release" "postgres_dev" {
     file("../../helm/values/postgres/values.dev.yaml")
   ]
 
-  set { name = "image.repository", value = "bitnamilegacy/postgresql" }
-  set { name = "image.tag", value = var.postgres_image_tag }
+  set {
+    name  = "image.repository"
+    value = "bitnamilegacy/postgresql"
+  }
 
-  set { name = "auth.existingSecret", value = "db-credentials" }
-  set { name = "auth.username", value = var.db_user_dev }
-  set { name = "auth.database", value = "taskdb" }
+  set {
+    name  = "image.tag"
+    value = var.postgres_image_tag
+  }
+
+  set {
+    name  = "auth.existingSecret"
+    value = "db-credentials"
+  }
+
+  set {
+    name  = "auth.username"
+    value = var.db_user_dev
+  }
+
+  set {
+    name  = "auth.database"
+    value = "taskdb"
+  }
 
   depends_on = [
     kubernetes_namespace.dev,
@@ -51,7 +72,10 @@ resource "helm_release" "task_service_dev" {
     file("../../helm/charts/task-service/values-dev.yaml")
   ]
 
-  set { name = "image.tag", value = var.app_version }
+  set {
+    name  = "image.tag"
+    value = var.app_version
+  }
 
   depends_on = [
     kubernetes_namespace.dev,
