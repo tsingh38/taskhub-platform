@@ -2,7 +2,16 @@ pipeline {
   agent any
 
   parameters {
-    choice(name: 'TARGET', choices: ['monitoring', 'dev', 'prod'], description: 'Which stack to bootstrap/import into Terraform state')
+    booleanParam(
+      name: 'CONFIRM_BOOTSTRAP',
+      defaultValue: false,
+      description: 'Safety switch: must be TRUE to run bootstrap/import steps'
+    )
+    choice(
+      name: 'TARGET',
+      choices: ['none', 'monitoring', 'dev', 'prod'],
+      description: 'Which stack to bootstrap/import into Terraform state'
+    )
   }
 
   environment {
@@ -14,10 +23,27 @@ pipeline {
   }
 
   stages {
-    stage('Checkout') { steps { checkout scm } }
+
+    stage('Validate Input') {
+      steps {
+        script {
+          if (!params.CONFIRM_BOOTSTRAP) {
+            error("Bootstrap blocked. Tick CONFIRM_BOOTSTRAP=true and pick TARGET (monitoring/dev/prod).")
+          }
+          if (params.TARGET == null || params.TARGET.trim() == '' || params.TARGET == 'none') {
+            error("Bootstrap blocked. Select a valid TARGET (monitoring/dev/prod).")
+          }
+        }
+      }
+    }
+
+    stage('Checkout') {
+      when { expression { return params.CONFIRM_BOOTSTRAP && params.TARGET != 'none' } }
+      steps { checkout scm }
+    }
 
     stage('Bootstrap Monitoring') {
-      when { expression { params.TARGET == 'monitoring' } }
+      when { expression { return params.CONFIRM_BOOTSTRAP && params.TARGET == 'monitoring' } }
       steps {
         dir('infra/terraform/monitoring') {
           withCredentials([string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK')]) {
@@ -44,7 +70,7 @@ pipeline {
     }
 
     stage('Bootstrap Dev') {
-      when { expression { params.TARGET == 'dev' } }
+      when { expression { return params.CONFIRM_BOOTSTRAP && params.TARGET == 'dev' } }
       steps {
         dir('infra/terraform/dev') {
           withCredentials([
@@ -77,7 +103,7 @@ pipeline {
     }
 
     stage('Bootstrap Prod') {
-      when { expression { params.TARGET == 'prod' } }
+      when { expression { return params.CONFIRM_BOOTSTRAP && params.TARGET == 'prod' } }
       steps {
         dir('infra/terraform/prod') {
           withCredentials([
@@ -107,6 +133,12 @@ pipeline {
           }
         }
       }
+    }
+  }
+
+  post {
+    always {
+      echo "Bootstrap job finished (success/failure)."
     }
   }
 }
