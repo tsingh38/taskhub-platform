@@ -5,6 +5,27 @@
   "graphTooltip": 0,
   "links": [],
   "liveNow": false,
+
+  "templating": {
+    "list": [
+      {
+        "type": "custom",
+        "name": "env",
+        "label": "Environment",
+        "hide": 0,
+        "query": "dev,prod",
+        "current": { "text": "dev", "value": "dev" },
+        "options": [
+          { "text": "dev", "value": "dev", "selected": true },
+          { "text": "prod", "value": "prod", "selected": false }
+        ],
+        "includeAll": false,
+        "multi": false,
+        "skipUrlSync": false
+      }
+    ]
+  },
+
   "panels": [
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
@@ -53,7 +74,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "editorMode": "code",
-          "expr": "sum(increase(http_server_requests_seconds_count{uri=\"/tasks\"}[1h]))",
+          "expr": "sum(increase(http_server_requests_seconds_count{namespace=\"$env\",job=\"task-service\"}[1h]))",
           "legendFormat": "Total Requests (Last 1h)",
           "range": true,
           "refId": "A"
@@ -62,6 +83,7 @@
       "title": "🟢 Panel 1: Traffic Volume",
       "type": "timeseries"
     },
+
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
@@ -89,12 +111,7 @@
             "thresholdsStyle": { "mode": "off" }
           },
           "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null }
-            ]
-          }
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
         },
         "overrides": []
       },
@@ -108,7 +125,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "editorMode": "code",
-          "expr": "sum by (type) (increase(api_errors_total[1h]))",
+          "expr": "sum by (type) (increase(api_errors_total{namespace=\"$env\",application=\"task-service\"}[1h]))",
           "legendFormat": "Business Error: {{type}}",
           "range": true,
           "refId": "A"
@@ -116,8 +133,8 @@
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "editorMode": "code",
-          "expr": "sum(increase(http_server_requests_seconds_count{status=\"500\"}[1h]))",
-          "legendFormat": "Server Crashes (500)",
+          "expr": "sum(increase(http_server_requests_seconds_count{namespace=\"$env\",job=\"task-service\",outcome=\"SERVER_ERROR\"}[1h]))",
+          "legendFormat": "Server Errors (5xx)",
           "range": true,
           "refId": "B"
         }
@@ -125,6 +142,7 @@
       "title": "🔴 Panel 2: Error Breakdown",
       "type": "timeseries"
     },
+
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
@@ -174,7 +192,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "editorMode": "code",
-          "expr": "sum(increase(http_server_requests_seconds_sum{uri=\"/tasks\"}[1h])) / sum(increase(http_server_requests_seconds_count{uri=\"/tasks\"}[1h]))",
+          "expr": "sum(increase(http_server_requests_seconds_sum{namespace=\"$env\",job=\"task-service\"}[1h])) / sum(increase(http_server_requests_seconds_count{namespace=\"$env\",job=\"task-service\"}[1h]))",
           "legendFormat": "Avg Latency",
           "range": true,
           "refId": "A"
@@ -184,16 +202,16 @@
       "type": "timeseries"
     }
   ],
+
   "refresh": "5s",
   "schemaVersion": 38,
   "style": "dark",
   "tags": [],
-  "templating": { "list": [] },
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {},
   "timezone": "",
   "title": "TaskHub: Golden Signals",
   "uid": "taskhub-gold-v1",
-  "version": 1,
+  "version": 3,
   "weekStart": ""
 }
