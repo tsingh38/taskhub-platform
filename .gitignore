@@ -1,3 +1,27 @@
 .vscode/settings.json
 services/task-service/.gradle/8.14.3/fileHashes/fileHashes.lock
 task-service.tar
+# Gradle
+.gradle/
+build/
+
+# IntelliJ
+.idea/
+*.iml
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+# Compiled files
+*.class
+
+# Ignore Terraform state
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# Ignore sensitive variable values
+*.tfvars

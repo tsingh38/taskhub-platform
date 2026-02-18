@@ -3,6 +3,7 @@ package com.taskhub.taskservice.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taskhub.taskservice.dto.TaskRequest;
 import com.taskhub.taskservice.repository.TaskRepository;
+import org.junit.jupiter.api.BeforeEach; // Added this
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -40,13 +41,17 @@ class TaskControllerIT {
     static PostgreSQLContainer<?> postgres =
             new PostgreSQLContainer<>("postgres:15");
 
-
-
     @DynamicPropertySource
     static void registerProps(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
+    }
+
+    // 💡 GOOD PRACTICE: Clean DB before each test to ensure isolation
+    @BeforeEach
+    void setUp() {
+        repository.deleteAll();
     }
 
     @Test
@@ -73,10 +78,14 @@ class TaskControllerIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Integration Task"));
 
-        // GET ALL
-        mockMvc.perform(get("/tasks"))
+        // GET ALL (PAGINATED) - ⚠️ FIXED HERE
+        mockMvc.perform(get("/tasks")
+                        .param("page", "0")
+                        .param("size", "5")
+                        .param("sort", "dueDate,desc")) // Optional: Test sorting too
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
+                .andExpect(jsonPath("$.content.length()").value(1)) // Check size of 'content' array
+                .andExpect(jsonPath("$.content[0].title").value("Integration Task")); // Verify data
 
         // UPDATE
         TaskRequest update = new TaskRequest(

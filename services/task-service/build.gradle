@@ -2,10 +2,11 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.5.9'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id "net.researchgate.release" version "3.0.2"
 }
 
 group = 'com.taskhub'
-version = '0.0.1-SNAPSHOT'
+version = '0.1.0-SNAPSHOT'
 description = 'task hub service'
 
 java {
@@ -25,6 +26,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	runtimeOnly 'org.postgresql:postgresql'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.15'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'io.micrometer:micrometer-registry-prometheus'
+	implementation 'org.springframework.boot:spring-boot-starter-aop'
 	// testing
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	// ✅ Testcontainers core
@@ -35,4 +40,7 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+release {
+	tagTemplate = '${version}'
 }
