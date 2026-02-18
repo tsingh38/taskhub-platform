@@ -21,8 +21,8 @@ pipeline {
     KUBECONFIG = "/var/lib/jenkins/.kube/config"
 
     TF_STATE_MONITORING = "/var/lib/jenkins/terraform-state/taskhub-monitoring/terraform.tfstate"
-    TF_STATE_DEV        = "/var/lib/jenkins/terraform-state/taskhub-dev/terraform.dev.tfstate"
-    TF_STATE_PROD       = "/var/lib/jenkins/terraform-state/taskhub-prod/terraform.prod.tfstate"
+    TF_STATE_DEV        = "/var/lib/jenkins/terraform-state/taskhub-dev/terraform.tfstate"
+    TF_STATE_PROD       = "/var/lib/jenkins/terraform-state/taskhub-prod/terraform.tfstate"
 
     TRIVY_CACHE_DIR = "/var/lib/jenkins/.cache/trivy"
   }
