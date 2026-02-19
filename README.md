@@ -289,12 +289,10 @@ docker compose up --build
 
 ---
 
-## 8) Testing (TODO)
-- How to run unit tests
-- Whether there are integration tests
-- Where to find the test reports
-- What makes the pipeline fail (quality gates)
+## 8) Testing 
 
+- One integration test covers the main CRUD flow end-to-end.
+- Additional unit tests will be added as features grow.
 ---
 
 ## 9) Deployment (Dev/Prod)
@@ -359,7 +357,7 @@ Monitoring is deployed via `kube-prometheus-stack` (Helm) in the `monitoring` na
 ### Grafana access
 - URL: http://51.158.200.80:30030/
 - User: `admin`
-- Password: stored in Kubernetes Secret: `monitoring-stack-grafana`
+- Password: stored in the Kubernetes Secret `monitoring-stack-grafana` (retrievable for demo/evaluation if needed)
 
 ### Dashboards
 - “Golden Signals” dashboard (dev/prod filter via dropdown):
@@ -405,23 +403,13 @@ chmod +x traffic.generator.sh
 
 ---
 
-## 13) Disaster Recovery (DR) (TODO)
-- What can go wrong (cluster wipe, Terraform state loss, DB loss)
-- Recovery steps (IaC re-apply, re-deploy, restore DB)
-- Backups: where stored, how often, how to restore
-- RTO/RPO statement (simple + realistic)
+## 13) Disaster Recovery (DR) 
+
+- TODO
 
 ---
 
-## 14) Troubleshooting (TODO)
-- Jenkins: common failures + quick fixes
-- Terraform: state lock / permission issues
-- Prometheus not scraping ServiceMonitor (label selector)
-- Pod crashloop checklist (`kubectl logs`, `kubectl describe`, probes)
-
----
-
-## 15) Roadmap
+## 14) Roadmap
 
 Upcoming features (post DevOps submission):
 - OAuth2
