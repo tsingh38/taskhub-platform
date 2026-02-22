@@ -1,4 +1,4 @@
-# TaskHub Platform
+# TaskHub App
 
 ## 1) Overview
 
