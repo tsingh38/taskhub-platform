@@ -404,7 +404,7 @@ chmod +x traffic.generator.sh
 
 ## 13) Disaster Recovery (DR) 
 
-- TODO
+- Steos fir dus
 
 ---
 
