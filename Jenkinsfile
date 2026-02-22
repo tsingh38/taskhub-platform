@@ -30,54 +30,7 @@ pipeline {
       }
     }
 
-    stage('Resolve Changeset') {
-      steps {
-        script {
-          boolean appChanged = false
-          boolean infraChanged = false
-          boolean otherChanged = false
-
-          // For very first build
-          if (currentBuild.changeSets == null || currentBuild.changeSets.isEmpty()) {
-            env.APP_CHANGED = "true"
-            env.INFRA_CHANGED = "false"
-            env.INFRA_ONLY = "false"
-            echo "No changelog found. Defaulting to APP_CHANGED=true (run full CI)."
-            return
-          }
-
-          for (cs in currentBuild.changeSets) {
-            for (entry in cs.items) {
-              for (file in entry.affectedFiles) {
-                def p = file.path
-
-                // App code
-                if (p.startsWith("services/task-service/")) {
-                  appChanged = true
-                }
-                // Infra / Helm / manifests
-                else if (p.startsWith("infra/") || p.startsWith("charts/") || p.startsWith("k8s/")) {
-                  infraChanged = true
-                }
-                // Anything else
-                else {
-                  otherChanged = true
-                }
-              }
-            }
-          }
-
-          env.APP_CHANGED = appChanged.toString()
-          env.INFRA_CHANGED = infraChanged.toString()
-          env.INFRA_ONLY = (infraChanged && !appChanged).toString()
-
-          echo "APP_CHANGED=${env.APP_CHANGED}, INFRA_CHANGED=${env.INFRA_CHANGED}, OTHER_CHANGED=${otherChanged}, INFRA_ONLY=${env.INFRA_ONLY}"
-        }
-      }
-    }
-
     stage('Resolve Version') {
-      when { expression { return env.INFRA_ONLY != "true" } }
       steps {
         dir('services/task-service') {
           script {
@@ -85,6 +38,7 @@ pipeline {
               script: "./gradlew properties -q | grep '^version:' | awk '{print \$2}'",
               returnStdout: true
             ).trim()
+
             env.APP_VERSION = version
             echo "APP_VERSION=${env.APP_VERSION}"
           }
@@ -93,7 +47,6 @@ pipeline {
     }
 
     stage('Compute Image Tag') {
-      when { expression { return env.INFRA_ONLY != "true" } }
       steps {
         script {
           env.IMAGE_TAG = "${env.APP_VERSION}-${env.BUILD_NUMBER}"
@@ -105,7 +58,6 @@ pipeline {
     }
 
     stage('Build & Test') {
-      when { expression { return env.INFRA_ONLY != "true" } }
       steps {
         dir('services/task-service') {
           sh '''
@@ -124,7 +76,6 @@ pipeline {
     }
 
     stage('Docker Build & Push') {
-      when { expression { return env.INFRA_ONLY != "true" } }
       steps {
         dir('services/task-service') {
           withCredentials([usernamePassword(
@@ -145,7 +96,6 @@ pipeline {
     }
 
     stage('Trivy Scan (HIGH/CRITICAL gate)') {
-      when { expression { return env.INFRA_ONLY != "true" } }
       steps {
         withCredentials([usernamePassword(
           credentialsId: DOCKERHUB_CREDENTIALS,
@@ -182,14 +132,10 @@ pipeline {
     stage('Trigger DEV Deploy') {
       steps {
         script {
-          // If infra-only, deploy should keep current image
-          def tagToDeploy = (env.INFRA_ONLY == "true") ? "KEEP_CURRENT" : env.IMAGE_TAG
-
-          echo "Triggering taskhub-deploy-dev with IMAGE_TAG=${tagToDeploy}"
-
+          echo "Triggering taskhub-deploy-dev with IMAGE_TAG=${env.IMAGE_TAG}"
           build job: 'taskhub-deploy-dev',
             parameters: [
-              string(name: 'IMAGE_TAG', value: tagToDeploy)
+              string(name: 'IMAGE_TAG', value: env.IMAGE_TAG)
             ],
             wait: true
         }
@@ -198,7 +144,7 @@ pipeline {
   }
 
   post {
-    success { echo "taskhub-ci-dev SUCCESS (INFRA_ONLY=${env.INFRA_ONLY})" }
+    success { echo "taskhub-ci-dev SUCCESS (IMAGE_TAG=${env.IMAGE_TAG})" }
     failure { echo "taskhub-ci-dev FAILED" }
   }
 }
