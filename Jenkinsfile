@@ -133,7 +133,7 @@ pipeline {
       steps {
         script {
           echo "Triggering taskhub-deploy-dev with IMAGE_TAG=${env.IMAGE_TAG}"
-          build job: '../taskhub-deploy-dev',
+          build job: 'taskhub-deploy-dev',
             parameters: [
               string(name: 'IMAGE_TAG', value: env.IMAGE_TAG)
             ],
