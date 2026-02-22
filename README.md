@@ -56,7 +56,6 @@ Then open:
 - No Vault is used in this project; Jenkins is the source of truth for secrets in the current setup.
 
 ---
-
 ## 3) Key Features
 
 ### Product features
